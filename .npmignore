@@ -1,0 +1,19 @@
+# package.json "files" is the primary publish allowlist. These rules are
+# defense in depth for files npm may otherwise consider automatically.
+.*
+coverage/
+dev/
+docs/
+node_modules/
+src/
+*.log*
+*.timestamp*
+*.tgz
+AGENTS.md
+RELEASING.md
+eslint.config.mjs
+index.html
+pnpm-lock.yaml
+tsconfig*.json
+vite.config.ts
+vitest.config.ts

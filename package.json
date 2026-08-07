@@ -1,0 +1,79 @@
+{
+  "name": "agile-knowledge-graph",
+  "version": "0.1.0",
+  "description": "Vue 3 知识图谱可视化组件，基于 AntV G6",
+  "type": "module",
+  "main": "./dist/agile-knowledge-graph.cjs",
+  "module": "./dist/agile-knowledge-graph.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/agile-knowledge-graph.mjs",
+      "require": "./dist/agile-knowledge-graph.cjs",
+      "default": "./dist/agile-knowledge-graph.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run test:run",
+    "dev": "vite",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prepack": "pnpm run check && pnpm run build",
+    "release:check": "pnpm run prepack && npm pack --dry-run --ignore-scripts",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:run": "vitest run",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@antv/g6": "^5.1.1",
+    "vue": "^3.2.0"
+  },
+  "devDependencies": {
+    "@antv/g6": "^5.1.1",
+    "@eslint/js": "10.0.1",
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "4.1.10",
+    "@vue/test-utils": "2.4.11",
+    "eslint": "10.8.0",
+    "eslint-plugin-vue": "10.10.0",
+    "globals": "17.9.0",
+    "jsdom": "29.1.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vite": "^8.2.1",
+    "vite-plugin-dts": "^5.0.3",
+    "vitest": "4.1.10",
+    "vue": "^3.5.41",
+    "vue-tsc": "^3.3.9"
+  },
+  "keywords": [
+    "vue",
+    "knowledge-graph",
+    "g6",
+    "antv",
+    "visualization"
+  ],
+  "author": "lytdev",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lytdev/agile-knowledge-graph.git"
+  },
+  "homepage": "https://github.com/lytdev/agile-knowledge-graph",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.24.0"
+}
