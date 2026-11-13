@@ -4,7 +4,11 @@ import type { GraphNode } from '../types'
 import GraphVisualization from './GraphVisualization.vue'
 
 const graphMock = vi.hoisted(() => ({
-  initOptions: undefined as { onNodeClick?: (nodeId: string) => void } | undefined,
+  initOptions: undefined as {
+    layoutType?: string
+    onNodeClick?: (nodeId: string) => void
+  } | undefined,
+  switchLayout: vi.fn(),
 }))
 
 vi.mock('../module/g6Graph', () => ({
@@ -13,6 +17,7 @@ vi.mock('../module/g6Graph', () => ({
       graphMock.initOptions = options
     }
 
+    switchLayout = graphMock.switchLayout
     destroy() {}
   },
 }))
@@ -20,6 +25,7 @@ vi.mock('../module/g6Graph', () => ({
 describe('GraphVisualization', () => {
   beforeEach(() => {
     graphMock.initOptions = undefined
+    graphMock.switchLayout.mockClear()
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(600)
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(400)
     vi.stubGlobal('ResizeObserver', class {
@@ -55,5 +61,21 @@ describe('GraphVisualization', () => {
     graphMock.initOptions?.onNodeClick?.('node-2')
 
     expect(wrapper.emitted('nodeClick')).toEqual([[nodes[1]]])
+  })
+
+  it('passes the initial layout and follows layout prop changes', async () => {
+    const wrapper = mount(GraphVisualization, {
+      props: {
+        nodes: [{ id: 'node-1', label: '节点一' }],
+        edges: [],
+        layoutType: 'concentric',
+      },
+    })
+
+    await flushPromises()
+    expect(graphMock.initOptions?.layoutType).toBe('concentric')
+
+    await wrapper.setProps({ layoutType: 'indented' })
+    expect(graphMock.switchLayout).toHaveBeenCalledWith('indented')
   })
 })

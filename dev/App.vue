@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { GraphVisualization, GraphToolbar, type GraphEdge, type GraphNode, type LayoutType } from '../src/index'
+import {
+  GRAPH_LAYOUT_OPTIONS,
+  GraphVisualization,
+  GraphToolbar,
+  type GraphEdge,
+  type GraphNode,
+  type LayoutType,
+} from '../src/index'
 import { cloneGraph, parseGraphJson, presets } from './demoData'
 
 interface GraphHandle {
@@ -16,14 +23,14 @@ const nodes = ref<GraphNode[]>(initial.nodes)
 const edges = ref<GraphEdge[]>(initial.edges)
 const selectedPreset = ref('knowledge')
 const layoutType = ref<LayoutType>('force')
-const selectedNode = ref('ai')
+const selectedNode = ref(initial.nodes[0]?.id ?? '')
 const newNodeLabel = ref('')
 const newNodeType = ref('概念')
-const connectTo = ref('ai')
+const connectTo = ref(initial.nodes[0]?.id ?? '')
 const newRelationLabel = ref('关联')
 const newRelationType = ref('相关')
 const relationDirection = ref<'existing-to-new' | 'new-to-existing'>('existing-to-new')
-const edgeTarget = ref('ml')
+const edgeTarget = ref(initial.nodes[1]?.id ?? '')
 const edgeLabel = ref('关联')
 const edgeType = ref('相关')
 const formError = ref('')
@@ -35,6 +42,10 @@ const editCount = ref(0)
 const nodeOptions = computed(() => nodes.value.map(({ id, label }) => ({ id, label })))
 const edgeTargets = computed(() => nodeOptions.value.filter(({ id }) => id !== selectedNode.value))
 const graphKey = computed(() => `graph-${editCount.value}`)
+const layoutOption = computed(
+  () => GRAPH_LAYOUT_OPTIONS.find((layout) => layout.value === layoutType.value)
+    ?? GRAPH_LAYOUT_OPTIONS[0],
+)
 
 watch(selectedNode, () => {
   if (!edgeTargets.value.some(({ id }) => id === edgeTarget.value)) {
@@ -155,8 +166,8 @@ async function focusSelected() {
 
 function switchLayout(type: LayoutType) {
   layoutType.value = type
-  graphRef.value?.switchLayout(type)
-  status.value = type === 'force' ? '已切换力导向布局' : '已切换环形布局'
+  const option = GRAPH_LAYOUT_OPTIONS.find((layout) => layout.value === type)
+  status.value = `已切换${option?.label ?? type}布局`
 }
 
 function resetLayout() {
@@ -171,7 +182,6 @@ function fitView() {
 
 function handleNodeClick(node: GraphNode) {
   selectedNode.value = node.id
-  console.log('点击节点', node)
   status.value = `已点击节点：${node.label} (${node.id})`
 }
 </script>
@@ -180,14 +190,14 @@ function handleNodeClick(node: GraphNode) {
   <div class="demo-shell">
     <header class="demo-header">
       <div>
-        <span class="eyebrow">KNOWLEDGE GRAPH / DEV</span>
+        <span class="eyebrow">VUE KNOWLEDGE GRAPH / DEV</span>
         <h1>知识图谱调试台</h1>
         <p>直接修改数据，检查组件的渲染、布局和交互。</p>
       </div>
       <div class="header-badges">
         <span>{{ nodes.length }} 节点</span>
         <span>{{ edges.length }} 关系</span>
-        <span>{{ layoutType === 'force' ? '力导向' : '环形' }}</span>
+        <span>{{ layoutOption.label }}</span>
       </div>
     </header>
 
@@ -481,7 +491,7 @@ function handleNodeClick(node: GraphNode) {
           <div class="canvas-title">
             <span class="live-dot"></span> 实时预览
           </div>
-          <span class="canvas-hint">滚轮缩放 · 拖动节点 · 右键拖动画布</span>
+          <span class="canvas-hint">滚轮缩放 · 拖动节点 · 左键拖动画布</span>
         </div>
         <div class="canvas-stage">
           <GraphVisualization
@@ -490,6 +500,7 @@ function handleNodeClick(node: GraphNode) {
             ref="graphRef"
             :nodes="nodes"
             :edges="edges"
+            :layout-type="layoutType"
             @node-click="handleNodeClick"
           />
           <div
@@ -506,8 +517,7 @@ function handleNodeClick(node: GraphNode) {
             :layout-type="layoutType"
             @fit-view="fitView"
             @reset-layout="resetLayout"
-            @switch-to-force="switchLayout('force')"
-            @switch-to-circular="switchLayout('circular')"
+            @switch-layout="switchLayout"
           />
         </div>
         <footer class="canvas-footer">

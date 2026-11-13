@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import {
+  GRAPH_LAYOUT_OPTIONS,
+  type GraphLayoutCategory,
+  type LayoutType,
+} from '../module/g6Graph'
 
 interface Props {
-  layoutType?: 'force' | 'circular'
+  layoutType?: LayoutType
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -12,22 +17,48 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   fitView: []
   resetLayout: []
+  switchLayout: [type: LayoutType]
   switchToForce: []
   switchToCircular: []
 }>()
 
-const layoutType = ref(props.layoutType)
 const collapsed = ref(false)
+const selectedLayout = ref<LayoutType>(props.layoutType)
 
-const handleSwitchToForce = () => {
-  layoutType.value = 'force'
-  emit('switchToForce')
+const layoutGroups: Array<{ category: GraphLayoutCategory; label: string }> = [
+  { category: 'network', label: '关系网络' },
+  { category: 'hierarchy', label: '层级与树形' },
+]
+
+const groupedLayouts = computed(() =>
+  layoutGroups
+    .map((group) => ({
+      ...group,
+      options: GRAPH_LAYOUT_OPTIONS.filter((layout) => layout.category === group.category),
+    }))
+    .filter((group) => group.options.length > 0)
+)
+
+const currentLayout = computed(
+  () => GRAPH_LAYOUT_OPTIONS.find((layout) => layout.value === selectedLayout.value)
+)
+
+const handleLayoutChange = (event: Event) => {
+  const type = (event.target as HTMLSelectElement).value as LayoutType
+  if (!GRAPH_LAYOUT_OPTIONS.some((layout) => layout.value === type)) return
+
+  selectedLayout.value = type
+  emit('switchLayout', type)
+  if (type === 'force') emit('switchToForce')
+  if (type === 'circular') emit('switchToCircular')
 }
 
-const handleSwitchToCircular = () => {
-  layoutType.value = 'circular'
-  emit('switchToCircular')
-}
+watch(
+  () => props.layoutType,
+  (type) => {
+    selectedLayout.value = type
+  }
+)
 
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value
@@ -43,6 +74,8 @@ const toggleCollapse = () => {
       @click="toggleCollapse"
       class="kg-btn kg-toggle"
       :title="collapsed ? '展开工具栏' : '收起工具栏'"
+      :aria-label="collapsed ? '展开工具栏' : '收起工具栏'"
+      :aria-expanded="!collapsed"
     >
       {{ collapsed ? '▶' : '◀' }}
     </button>
@@ -53,35 +86,45 @@ const toggleCollapse = () => {
       <button
         @click="emit('fitView')"
         class="kg-btn"
+        title="适应画布"
       >
         <span class="kg-icon">⊡</span>
-        适应画布
+        <span class="kg-btn-label">适应画布</span>
       </button>
       <button
         @click="emit('resetLayout')"
         class="kg-btn"
+        title="重置布局"
       >
         <span class="kg-icon">↻</span>
-        重置布局
+        <span class="kg-btn-label">重置布局</span>
       </button>
-      <button 
-        @click="handleSwitchToForce" 
-        class="kg-btn" 
-        :class="{ 'kg-active': layoutType === 'force' }" 
-        title="力导向布局，节点更分散"
+      <label
+        class="kg-layout-control"
+        :title="currentLayout?.description"
       >
-        <span class="kg-icon">⚡</span>
-        力导向
-      </button>
-      <button 
-        @click="handleSwitchToCircular" 
-        class="kg-btn" 
-        :class="{ 'kg-active': layoutType === 'circular' }" 
-        title="环形布局，适合枢纽型图谱"
-      >
-        <span class="kg-icon">◎</span>
-        环形
-      </button>
+        <span class="kg-layout-label">图类型</span>
+        <select
+          class="kg-layout-select"
+          :value="selectedLayout"
+          aria-label="选择图布局"
+          @change="handleLayoutChange"
+        >
+          <optgroup
+            v-for="group in groupedLayouts"
+            :key="group.category"
+            :label="group.label"
+          >
+            <option
+              v-for="layout in group.options"
+              :key="layout.value"
+              :value="layout.value"
+            >
+              {{ layout.label }}
+            </option>
+          </optgroup>
+        </select>
+      </label>
     </div>
   </div>
 </template>
@@ -115,6 +158,7 @@ const toggleCollapse = () => {
 .kg-btn-group {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .kg-btn {
@@ -138,14 +182,48 @@ const toggleCollapse = () => {
   color: #0f172a;
 }
 
-.kg-btn.kg-active {
-  background: #3b82f6;
-  color: #fff;
+.kg-btn:focus-visible,
+.kg-toggle:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
 }
 
 .kg-icon {
   font-size: 13px;
   line-height: 1;
+}
+
+.kg-layout-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 10px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.kg-layout-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.kg-layout-select {
+  width: 128px;
+  min-height: 31px;
+  padding: 5px 26px 5px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #1e293b;
+  font-size: 12px;
+  outline: none;
+}
+
+.kg-layout-select:hover,
+.kg-layout-select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px #dbeafe;
 }
 
 .kg-toggle {
@@ -160,5 +238,36 @@ const toggleCollapse = () => {
 .kg-toggle:hover {
   background: #e2e8f0;
   color: #0f172a;
+}
+
+@media (max-width: 640px) {
+  .kg-toolbar {
+    max-width: calc(100% - 24px);
+  }
+
+  .kg-btn-group {
+    gap: 4px;
+  }
+
+  .kg-btn {
+    padding: 6px 8px;
+  }
+
+  .kg-btn-label {
+    display: none;
+  }
+
+  .kg-layout-control {
+    padding-left: 6px;
+    gap: 4px;
+  }
+
+  .kg-layout-label {
+    display: none;
+  }
+
+  .kg-layout-select {
+    width: 120px;
+  }
 }
 </style>

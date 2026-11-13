@@ -3,17 +3,34 @@ import { describe, expect, it } from 'vitest'
 import GraphToolbar from './GraphToolbar.vue'
 
 describe('GraphToolbar', () => {
-  it('uses the force layout by default and switches to circular', async () => {
+  it('shows all supported layouts and emits the selected layout', async () => {
     const wrapper = mount(GraphToolbar)
     const buttons = wrapper.findAll('.kg-btn-group .kg-btn')
+    const select = wrapper.get('.kg-layout-select')
 
-    expect(buttons).toHaveLength(4)
-    expect(buttons[2].classes()).toContain('kg-active')
+    expect(buttons).toHaveLength(2)
+    expect((select.element as HTMLSelectElement).value).toBe('force')
+    expect(wrapper.findAll('.kg-layout-select option')).toHaveLength(6)
 
-    await buttons[3].trigger('click')
+    await select.setValue('mindmap')
 
+    expect(wrapper.emitted('switchLayout')).toEqual([['mindmap']])
+  })
+
+  it('keeps the selected layout controlled by props and preserves legacy events', async () => {
+    const wrapper = mount(GraphToolbar, {
+      props: {
+        layoutType: 'force',
+      },
+    })
+    const select = wrapper.get('.kg-layout-select')
+
+    await select.setValue('circular')
+    await wrapper.setProps({ layoutType: 'antv-dagre' })
+
+    expect(wrapper.emitted('switchLayout')).toEqual([['circular']])
     expect(wrapper.emitted('switchToCircular')).toHaveLength(1)
-    expect(buttons[3].classes()).toContain('kg-active')
+    expect((select.element as HTMLSelectElement).value).toBe('antv-dagre')
   })
 
   it('emits viewport actions and supports collapsing', async () => {

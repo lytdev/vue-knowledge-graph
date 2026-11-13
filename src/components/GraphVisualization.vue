@@ -2,25 +2,26 @@
   <div
     ref="containerRef"
     class="graph-container"
-    @contextmenu.prevent
   ></div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { GraphNode, GraphEdge } from '../types'
-import { KnowledgeGraph } from '../module/g6Graph'
+import { KnowledgeGraph, type LayoutType } from '../module/g6Graph'
 
 interface Props {
   nodes: GraphNode[]
   edges: GraphEdge[]
   width?: number
   height?: number
+  layoutType?: LayoutType
 }
 
 const props = withDefaults(defineProps<Props>(), {
   width: 0,
-  height: 0
+  height: 0,
+  layoutType: 'force',
 })
 
 const emit = defineEmits<{
@@ -63,6 +64,7 @@ const initGraph = () => {
         container: containerRef.value!,
         width: props.width || width,
         height: props.height || height,
+        layoutType: props.layoutType,
         onNodeClick: (nodeId) => {
           const node = props.nodes.find((item) => item.id === nodeId)
           if (node) emit('nodeClick', node)
@@ -91,7 +93,7 @@ const resetLayout = () => {
   graph?.resetLayout()
 }
 
-const switchLayout = (type: 'force' | 'circular') => {
+const switchLayout = (type: LayoutType) => {
   graph?.switchLayout(type)
 }
 
@@ -119,6 +121,13 @@ watch(
     }
   },
   { deep: true }
+)
+
+watch(
+  () => props.layoutType,
+  (type) => {
+    graph?.switchLayout(type)
+  }
 )
 
 onMounted(() => {

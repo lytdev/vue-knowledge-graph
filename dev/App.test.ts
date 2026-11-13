@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import App from './App.vue'
 
 vi.mock('../src/index', () => ({
+  GRAPH_LAYOUT_OPTIONS: [
+    { value: 'force', label: '力导向' },
+    { value: 'circular', label: '环形' },
+  ],
   GraphVisualization: { template: '<div />' },
   GraphToolbar: { template: '<div />' },
 }))

@@ -1,23 +1,82 @@
 import {
+  CanvasEvent,
   Graph,
   NodeEvent,
+  type Canvas,
   type EdgeData,
   type GraphOptions,
   type IElementEvent,
   type IElementDragEvent,
+  type IPointerEvent,
   type NodeData,
+  type SingleLayoutOptions,
 } from '@antv/g6'
 import { nextTick } from 'vue'
 import type { GraphEdge, GraphNode } from '../types'
+
+export type LayoutType =
+  | 'force'
+  | 'circular'
+  | 'concentric'
+  | 'antv-dagre'
+  | 'indented'
+  | 'mindmap'
+
+export type GraphLayoutCategory = 'network' | 'hierarchy'
+
+export interface GraphLayoutOption {
+  value: LayoutType
+  label: string
+  description: string
+  category: GraphLayoutCategory
+}
+
+export const GRAPH_LAYOUT_OPTIONS: readonly GraphLayoutOption[] = [
+  {
+    value: 'force',
+    label: '力导向',
+    description: '通用网络布局，适合结构未知或关系密集的图谱',
+    category: 'network',
+  },
+  {
+    value: 'circular',
+    label: '环形',
+    description: '节点沿圆环排列，适合观察整体结构',
+    category: 'network',
+  },
+  {
+    value: 'concentric',
+    label: '同心圆',
+    description: '按连接度分层，突出核心节点和外围节点',
+    category: 'network',
+  },
+  {
+    value: 'antv-dagre',
+    label: '有向层级',
+    description: '按边的方向排列层级，适合 DAG 或流程数据',
+    category: 'hierarchy',
+  },
+  {
+    value: 'indented',
+    label: '缩进树',
+    description: '目录式层级布局，适合近树结构',
+    category: 'hierarchy',
+  },
+  {
+    value: 'mindmap',
+    label: '思维导图',
+    description: '从中心向两侧分支，适合近树结构',
+    category: 'hierarchy',
+  },
+]
 
 export interface GraphInitOptions {
   container: HTMLElement
   width?: number
   height?: number
+  layoutType?: LayoutType
   onNodeClick?: (nodeId: string) => void
 }
-
-export type LayoutType = 'force' | 'circular'
 
 /** 负责 G6 实例的生命周期和通用视口操作。 */
 export class BaseG6Graph {
@@ -90,32 +149,82 @@ export class BaseG6Graph {
 export class KnowledgeGraph extends BaseG6Graph {
   private currentLayoutType: LayoutType = 'force'
   private nodeClickHandler: ((nodeId: string) => void) | null = null
-  private contextMenuHandler: ((event: MouseEvent) => void) | null = null
-  private mouseDownHandler: ((event: MouseEvent) => void) | null = null
-  private mouseMoveHandler: ((event: MouseEvent) => void) | null = null
-  private mouseUpHandler: ((event: MouseEvent) => void) | null = null
+  private canvasElement: HTMLCanvasElement | null = null
+  private canvasPointerDownHandler: ((event: IPointerEvent) => void) | null = null
+  private canvasPointerMoveHandler: ((event: PointerEvent) => void) | null = null
+  private canvasPointerUpHandler: ((event: PointerEvent) => void) | null = null
+  private canvasPointerId: number | null = null
+  private lastCanvasPoint = { x: 0, y: 0 }
+  private isCanvasDragging = false
+  private canvasDefaultCursor: NonNullable<ReturnType<Canvas['getConfig']>['cursor']> = 'default'
 
-  private getLayoutConfig(type: LayoutType, width: number, height: number) {
+  private getLayoutConfig(
+    type: LayoutType,
+    width: number,
+    height: number,
+  ): SingleLayoutOptions {
     const center: [number, number] = [width / 2, height / 2]
+    const getNodeWidth = (node: { label?: string }) =>
+      Math.min(Math.max((node.label?.length ?? 4) * 14 + 28, 72), 220)
+    const getNodeHeight = () => 42
 
-    if (type === 'circular') {
-      return {
-        type: 'circular' as const,
-        center,
-        radius: Math.min(width, height) * 0.35,
-        startAngle: Math.PI / 2,
-        endAngle: Math.PI * 2.5,
-        ordering: 'degree' as const,
-      }
-    }
-
-    return {
-      type: 'force' as const,
-      center,
-      linkDistance: 280,
-      nodeStrength: 1000,
-      edgeStrength: 200,
-      gravity: 10,
+    switch (type) {
+      case 'circular':
+        return {
+          type,
+          center,
+          radius: Math.min(width, height) * 0.35,
+          startAngle: Math.PI / 2,
+          endAngle: Math.PI * 2.5,
+          ordering: 'degree',
+        }
+      case 'concentric':
+        return {
+          type,
+          center,
+          preventOverlap: true,
+          nodeSize: 42,
+          sortBy: 'degree',
+          equidistant: true,
+        }
+      case 'antv-dagre':
+        return {
+          type,
+          rankdir: 'TB',
+          align: 'UL',
+          nodesep: 42,
+          ranksep: 110,
+        }
+      case 'indented':
+        return {
+          type,
+          direction: 'LR',
+          indent: 36,
+          getWidth: getNodeWidth,
+          getHeight: getNodeHeight,
+          getHGap: () => 18,
+          getVGap: () => 12,
+        }
+      case 'mindmap':
+        return {
+          type,
+          direction: 'H',
+          preLayout: false,
+          getWidth: getNodeWidth,
+          getHeight: getNodeHeight,
+          getHGap: () => 30,
+          getVGap: () => 18,
+        }
+      case 'force':
+      default:
+        return {
+          type: 'force',
+          center,
+          linkDistance: 280,
+          nodeStrength: 1000,
+          edgeStrength: 200,
+          gravity: 10,
+        }
     }
   }
 
@@ -146,13 +255,13 @@ export class KnowledgeGraph extends BaseG6Graph {
     const height = options.height || options.container.offsetHeight
     const data = this.processData(nodes, edges)
 
-    this.currentLayoutType = 'force'
+    this.currentLayoutType = options.layoutType ?? 'force'
     this.createGraph(
       {
         data,
         animation: false,
         zoomRange: [0.1, 5],
-        layout: this.getLayoutConfig('force', width, height),
+        layout: this.getLayoutConfig(this.currentLayoutType, width, height),
         behaviors: [
           { type: 'zoom-canvas', sensitivity: 1 },
           { type: 'drag-element' },
@@ -195,7 +304,10 @@ export class KnowledgeGraph extends BaseG6Graph {
     if (!this.graph) return
     this.nodeClickHandler = options.onNodeClick ?? null
     this.setupEvents()
-    this.run(this.graph.render().then(() => this.scheduleFitView()))
+    this.run(this.graph.render().then(() => {
+      this.setupCanvasDrag()
+      this.scheduleFitView()
+    }))
   }
 
   public update(nodes: GraphNode[], edges: GraphEdge[]) {
@@ -320,51 +432,80 @@ export class KnowledgeGraph extends BaseG6Graph {
       graph.updateNodeData(updates)
       this.run(graph.draw())
     })
+  }
 
-    let isRightDragging = false
-    let lastPoint = { x: 0, y: 0 }
+  private setupCanvasDrag() {
+    if (!this.graph) return
+    const graph = this.graph
+    const canvas = graph.getCanvas()
+    const canvasElement = canvas.getContextService().getDomElement() as HTMLCanvasElement | null
+    if (!canvasElement) return
 
-    this.contextMenuHandler = (event) => event.preventDefault()
-    this.mouseDownHandler = (event) => {
-      if (event.button !== 2) return
-      isRightDragging = true
-      lastPoint = { x: event.clientX, y: event.clientY }
-      this.container!.style.cursor = 'grabbing'
-      event.preventDefault()
+    this.canvasElement = canvasElement
+    this.canvasDefaultCursor = canvas.getConfig().cursor || 'default'
+    this.canvasPointerDownHandler = (event) => {
+      if (event.button !== 0 || this.canvasPointerId !== null) return
+
+      this.canvasPointerId = event.pointerId
+      this.isCanvasDragging = true
+      this.lastCanvasPoint = { x: event.clientX, y: event.clientY }
+      canvasElement.setPointerCapture(event.pointerId)
+      canvas.setCursor('grabbing')
     }
-    this.mouseMoveHandler = (event) => {
-      if (!isRightDragging) return
-      const offset: [number, number] = [event.clientX - lastPoint.x, event.clientY - lastPoint.y]
-      lastPoint = { x: event.clientX, y: event.clientY }
+    this.canvasPointerMoveHandler = (event) => {
+      if (
+        !this.isCanvasDragging ||
+        (this.canvasPointerId !== null && event.pointerId !== this.canvasPointerId)
+      ) {
+        return
+      }
+
+      const offset: [number, number] = [
+        event.clientX - this.lastCanvasPoint.x,
+        event.clientY - this.lastCanvasPoint.y,
+      ]
+      this.lastCanvasPoint = { x: event.clientX, y: event.clientY }
       this.run(graph.translateBy(offset, false))
-      event.preventDefault()
+      event.preventDefault?.()
     }
-    this.mouseUpHandler = (event) => {
-      if (event.button !== 2 || !isRightDragging) return
-      isRightDragging = false
-      if (this.container) this.container.style.cursor = 'default'
+    this.canvasPointerUpHandler = (event) => {
+      if (this.canvasPointerId !== null && event.pointerId !== this.canvasPointerId) {
+        return
+      }
+
+      const wasDragging = this.isCanvasDragging
+      this.isCanvasDragging = false
+      this.canvasPointerId = null
+      if (wasDragging && canvasElement.hasPointerCapture?.(event.pointerId)) {
+        canvasElement.releasePointerCapture(event.pointerId)
+      }
+      if (wasDragging) canvas.setCursor(this.canvasDefaultCursor)
     }
 
-    this.container.addEventListener('contextmenu', this.contextMenuHandler)
-    this.container.addEventListener('mousedown', this.mouseDownHandler)
-    document.addEventListener('mousemove', this.mouseMoveHandler)
-    document.addEventListener('mouseup', this.mouseUpHandler)
+    graph.on(CanvasEvent.POINTER_DOWN, this.canvasPointerDownHandler)
+    window.addEventListener('pointermove', this.canvasPointerMoveHandler, true)
+    window.addEventListener('pointerup', this.canvasPointerUpHandler, true)
+    window.addEventListener('pointercancel', this.canvasPointerUpHandler, true)
   }
 
   public override destroy() {
-    if (this.container && this.contextMenuHandler) {
-      this.container.removeEventListener('contextmenu', this.contextMenuHandler)
+    if (this.graph && this.canvasPointerDownHandler) {
+      this.graph.off(CanvasEvent.POINTER_DOWN, this.canvasPointerDownHandler)
     }
-    if (this.container && this.mouseDownHandler) {
-      this.container.removeEventListener('mousedown', this.mouseDownHandler)
+    if (this.canvasPointerMoveHandler) {
+      window.removeEventListener('pointermove', this.canvasPointerMoveHandler, true)
     }
-    if (this.mouseMoveHandler) document.removeEventListener('mousemove', this.mouseMoveHandler)
-    if (this.mouseUpHandler) document.removeEventListener('mouseup', this.mouseUpHandler)
+    if (this.canvasPointerUpHandler) {
+      window.removeEventListener('pointerup', this.canvasPointerUpHandler, true)
+      window.removeEventListener('pointercancel', this.canvasPointerUpHandler, true)
+    }
 
-    this.contextMenuHandler = null
-    this.mouseDownHandler = null
-    this.mouseMoveHandler = null
-    this.mouseUpHandler = null
+    this.canvasElement = null
+    this.canvasPointerDownHandler = null
+    this.canvasPointerMoveHandler = null
+    this.canvasPointerUpHandler = null
+    this.canvasPointerId = null
+    this.isCanvasDragging = false
     this.nodeClickHandler = null
     super.destroy()
   }

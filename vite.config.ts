@@ -6,7 +6,7 @@ import packageJson from './package.json' with { type: 'json' }
 
 /** Inject component CSS once so consumers do not need a separate style import. */
 function inlineAllCss(): Plugin {
-  const styleId = 'knowledge-graph-styles'
+  const styleId = 'vue-knowledge-graph-styles'
 
   return {
     name: 'inline-all-css',
@@ -63,9 +63,9 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: resolve(import.meta.dirname, 'src/index.ts'),
-      name: 'KnowledgeGraph',
+      name: 'VueKnowledgeGraph',
       formats: ['es', 'cjs'],
-      fileName: (format) => `knowledge-graph.${format === 'es' ? 'mjs' : 'cjs'}`,
+      fileName: (format) => `vue-knowledge-graph.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
     rollupOptions: {
       external: ['vue', '@antv/g6'],
