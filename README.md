@@ -58,7 +58,36 @@ const edges = ref([
 | edges | `GraphEdge[]` | 必填 | 关系数据，`source` 和 `target` 必须引用已有节点 ID |
 | width | `number` | `0` | 画布宽度，0 表示自适应容器 |
 | height | `number` | `0` | 画布高度，0 表示自适应容器 |
-| layoutType | `LayoutType` | `'force'` | 当前布局，变化时自动切换 |
+| layoutType | `LayoutType` | `'force'` | 默认布局类型，传入后初始化并随参数变化自动切换 |
+
+#### 设置默认图类型
+
+业务端通过 `layout-type` 参数设置组件初始化时使用的图类型：
+
+```vue
+<script setup lang="ts">
+import { GraphVisualization, type LayoutType } from '@agilehub/vue-knowledge-graph'
+
+const defaultLayout: LayoutType = 'concentric'
+</script>
+
+<template>
+  <GraphVisualization
+    :nodes="nodes"
+    :edges="edges"
+    :layout-type="defaultLayout"
+  />
+</template>
+```
+
+也可以直接传入固定值，例如 `<GraphVisualization layout-type="circular" />`。支持的类型为：
+
+- `force`：力导向
+- `circular`：环形
+- `concentric`：同心圆
+- `antv-dagre`：有向层级
+- `indented`：缩进树
+- `mindmap`：思维导图
 
 #### Events
 

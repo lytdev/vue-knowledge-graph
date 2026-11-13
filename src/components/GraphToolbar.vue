@@ -77,7 +77,7 @@ const toggleCollapse = () => {
       :aria-label="collapsed ? '展开工具栏' : '收起工具栏'"
       :aria-expanded="!collapsed"
     >
-      {{ collapsed ? '▶' : '◀' }}
+      {{ collapsed ? '◀' : '▶' }}
     </button>
     <div
       class="kg-btn-group"

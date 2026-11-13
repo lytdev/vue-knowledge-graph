@@ -36,14 +36,20 @@ describe('GraphToolbar', () => {
   it('emits viewport actions and supports collapsing', async () => {
     const wrapper = mount(GraphToolbar)
     const buttons = wrapper.findAll('.kg-btn-group .kg-btn')
+    const toggle = wrapper.get('.kg-toggle')
+
+    expect(toggle.text()).toBe('▶')
+    expect(toggle.attributes('aria-label')).toBe('收起工具栏')
 
     await buttons[0].trigger('click')
     await buttons[1].trigger('click')
-    await wrapper.get('.kg-toggle').trigger('click')
+    await toggle.trigger('click')
 
     expect(wrapper.emitted('fitView')).toHaveLength(1)
     expect(wrapper.emitted('resetLayout')).toHaveLength(1)
     expect(wrapper.classes()).toContain('kg-collapsed')
     expect(wrapper.find('.kg-btn-group').isVisible()).toBe(false)
+    expect(toggle.text()).toBe('◀')
+    expect(toggle.attributes('aria-label')).toBe('展开工具栏')
   })
 })

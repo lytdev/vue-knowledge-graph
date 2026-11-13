@@ -15,6 +15,7 @@ interface Props {
   edges: GraphEdge[]
   width?: number
   height?: number
+  /** 初始布局类型，默认 force；变化时同步切换。 */
   layoutType?: LayoutType
 }
 
