@@ -59,6 +59,28 @@ const edges = ref([
 | width | `number` | `0` | 画布宽度，0 表示自适应容器 |
 | height | `number` | `0` | 画布高度，0 表示自适应容器 |
 
+#### Events
+
+| 事件名 | 参数 | 说明 |
+|--------|------|------|
+| nodeClick | `GraphNode` | 点击节点时触发，返回被点击的节点数据 |
+
+```vue
+<GraphVisualization
+  :nodes="nodes"
+  :edges="edges"
+  @node-click="handleNodeClick"
+/>
+```
+
+```typescript
+import type { GraphNode } from '@agilehub/knowledge-graph'
+
+const handleNodeClick = (node: GraphNode) => {
+  console.log(node.id)
+}
+```
+
 #### 节点数据类型 (GraphNode)
 
 ```typescript
@@ -74,7 +96,29 @@ interface GraphNode {
   }
   x?: number          // 初始 X 坐标
   y?: number          // 初始 Y 坐标
+  [key: string]: unknown // 自定义属性，值可以是字符串、数字、对象等
 }
+```
+
+自定义属性会保留在 `nodeClick` 事件参数和 G6 节点 `data` 中。需要强类型访问时可以扩展 `GraphNode`：
+
+```typescript
+import type { GraphNode } from '@agilehub/knowledge-graph'
+
+interface ArticleNode extends GraphNode {
+  score: number
+  bookCode: string
+}
+
+const nodes: ArticleNode[] = [
+  {
+    id: '1',
+    label: '金融资产',
+    type: '概念',
+    score: 98,
+    bookCode: 'b087892de9ef4108ae952267adf8e0db',
+  },
+]
 ```
 
 #### 边数据类型 (GraphEdge)

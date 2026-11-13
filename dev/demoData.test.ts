@@ -4,12 +4,24 @@ import { cloneGraph, parseGraphJson, presets } from './demoData'
 describe('demo graph data', () => {
   it('clones presets before editing', () => {
     const graph = cloneGraph(presets.knowledge)
+    const originalLabel = presets.knowledge.nodes[0].label
     graph.nodes[0].label = 'changed'
-    expect(presets.knowledge.nodes[0].label).toBe('人工智能')
+    expect(presets.knowledge.nodes[0].label).toBe(originalLabel)
   })
 
   it('accepts valid nodes and edges', () => {
     expect(parseGraphJson('{"nodes":[{"id":"a","label":"A"}],"edges":[]}').nodes[0].id).toBe('a')
+  })
+
+  it('preserves custom node attributes and numeric values', () => {
+    const node = parseGraphJson(
+      '{"nodes":[{"id":"a","label":"A","score":98,"metadata":{"source":"manual"}}],"edges":[]}',
+    ).nodes[0]
+
+    expect(node).toMatchObject({
+      score: 98,
+      metadata: { source: 'manual' },
+    })
   })
 
   it('rejects duplicate nodes and dangling edges', () => {

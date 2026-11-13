@@ -23,6 +23,10 @@ const props = withDefaults(defineProps<Props>(), {
   height: 0
 })
 
+const emit = defineEmits<{
+  nodeClick: [node: GraphNode]
+}>()
+
 const containerRef = ref<HTMLElement | null>(null)
 let graph: KnowledgeGraph | null = null
 let resizeObserver: ResizeObserver | null = null
@@ -58,7 +62,11 @@ const initGraph = () => {
       {
         container: containerRef.value!,
         width: props.width || width,
-        height: props.height || height
+        height: props.height || height,
+        onNodeClick: (nodeId) => {
+          const node = props.nodes.find((item) => item.id === nodeId)
+          if (node) emit('nodeClick', node)
+        },
       },
       props.nodes,
       props.edges

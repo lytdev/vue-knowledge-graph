@@ -3,6 +3,7 @@ import {
   NodeEvent,
   type EdgeData,
   type GraphOptions,
+  type IElementEvent,
   type IElementDragEvent,
   type NodeData,
 } from '@antv/g6'
@@ -13,6 +14,7 @@ export interface GraphInitOptions {
   container: HTMLElement
   width?: number
   height?: number
+  onNodeClick?: (nodeId: string) => void
 }
 
 export type LayoutType = 'force' | 'circular'
@@ -87,6 +89,7 @@ export class BaseG6Graph {
 /** 知识图谱实现：实体/关系配色、布局切换和图谱交互。 */
 export class KnowledgeGraph extends BaseG6Graph {
   private currentLayoutType: LayoutType = 'force'
+  private nodeClickHandler: ((nodeId: string) => void) | null = null
   private contextMenuHandler: ((event: MouseEvent) => void) | null = null
   private mouseDownHandler: ((event: MouseEvent) => void) | null = null
   private mouseMoveHandler: ((event: MouseEvent) => void) | null = null
@@ -190,6 +193,7 @@ export class KnowledgeGraph extends BaseG6Graph {
     )
 
     if (!this.graph) return
+    this.nodeClickHandler = options.onNodeClick ?? null
     this.setupEvents()
     this.run(this.graph.render().then(() => this.scheduleFitView()))
   }
@@ -249,7 +253,11 @@ export class KnowledgeGraph extends BaseG6Graph {
     return {
       nodes: nodes.map((node) => ({
         id: node.id,
-        data: { label: node.label, entityType: node.type },
+        data: {
+          ...node,
+          label: node.label,
+          entityType: node.type,
+        },
         style: {
           x: node.x,
           y: node.y,
@@ -293,6 +301,10 @@ export class KnowledgeGraph extends BaseG6Graph {
   private setupEvents() {
     if (!this.graph || !this.container) return
     const graph = this.graph
+
+    graph.on(NodeEvent.CLICK, (event: IElementEvent) => {
+      this.nodeClickHandler?.(event.target.id)
+    })
 
     graph.on(NodeEvent.DRAG, (event: IElementDragEvent) => {
       const nodeId = event.target.id
@@ -353,6 +365,7 @@ export class KnowledgeGraph extends BaseG6Graph {
     this.mouseDownHandler = null
     this.mouseMoveHandler = null
     this.mouseUpHandler = null
+    this.nodeClickHandler = null
     super.destroy()
   }
 }

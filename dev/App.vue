@@ -168,6 +168,12 @@ function fitView() {
   graphRef.value?.fitView()
   status.value = '已适应画布'
 }
+
+function handleNodeClick(node: GraphNode) {
+  selectedNode.value = node.id
+  console.log('点击节点', node)
+  status.value = `已点击节点：${node.label} (${node.id})`
+}
 </script>
 
 <template>
@@ -484,6 +490,7 @@ function fitView() {
             ref="graphRef"
             :nodes="nodes"
             :edges="edges"
+            @node-click="handleNodeClick"
           />
           <div
             v-else

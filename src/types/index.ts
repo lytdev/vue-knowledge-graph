@@ -12,6 +12,8 @@ export interface GraphNode {
   }
   x?: number
   y?: number
+  /** 业务自定义属性，值可以是字符串、数字、对象等任意类型。 */
+  [key: string]: unknown
 }
 
 export interface GraphEdge {
