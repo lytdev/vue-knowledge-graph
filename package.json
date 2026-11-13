@@ -1,22 +1,23 @@
 {
-  "name": "agile-knowledge-graph",
+  "name": "@agilehub/knowledge-graph",
   "version": "0.1.0",
   "description": "Vue 3 知识图谱可视化组件，基于 AntV G6",
   "type": "module",
-  "main": "./dist/agile-knowledge-graph.cjs",
-  "module": "./dist/agile-knowledge-graph.mjs",
+  "main": "./dist/knowledge-graph.cjs",
+  "module": "./dist/knowledge-graph.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/agile-knowledge-graph.mjs",
-      "require": "./dist/agile-knowledge-graph.cjs",
-      "default": "./dist/agile-knowledge-graph.mjs"
+      "import": "./dist/knowledge-graph.mjs",
+      "require": "./dist/knowledge-graph.cjs",
+      "default": "./dist/knowledge-graph.mjs"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "scripts": {
     "build": "vite build",
@@ -65,9 +66,9 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lytdev/agile-knowledge-graph.git"
+    "url": "git+https://github.com/lytdev/knowledge-graph.git"
   },
-  "homepage": "https://github.com/lytdev/agile-knowledge-graph",
+  "homepage": "https://github.com/lytdev/knowledge-graph",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

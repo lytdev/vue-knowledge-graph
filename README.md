@@ -1,11 +1,11 @@
-# agile-knowledge-graph
+# @agilehub/knowledge-graph
 
 Vue 3 知识图谱可视化组件，基于 AntV G6。支持力导向与环形布局、节点聚焦和交互式图谱调试页。
 
 ## 安装
 
 ```bash
-npm install agile-knowledge-graph @antv/g6 vue
+npm install @agilehub/knowledge-graph @antv/g6 vue
 ```
 
 ## 依赖
@@ -29,7 +29,7 @@ npm install agile-knowledge-graph @antv/g6 vue
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { GraphVisualization } from 'agile-knowledge-graph'
+import { GraphVisualization } from '@agilehub/knowledge-graph'
 
 const nodes = ref([
   { id: '1', label: '人工智能', type: '概念' },
@@ -138,7 +138,7 @@ interface GraphEdge {
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { GraphVisualization, GraphToolbar } from 'agile-knowledge-graph'
+import { GraphVisualization, GraphToolbar } from '@agilehub/knowledge-graph'
 
 const nodes = ref([
   { id: '1', label: '人工智能', type: '概念' },
@@ -205,7 +205,7 @@ const handleSwitchCircular = () => {
 
 ```js
 import { createApp } from 'vue'
-import KnowledgeGraph from 'agile-knowledge-graph'
+import KnowledgeGraph from '@agilehub/knowledge-graph'
 import App from './App.vue'
 
 const app = createApp(App)

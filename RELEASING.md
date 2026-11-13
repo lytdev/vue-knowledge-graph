@@ -6,7 +6,7 @@
 2. 执行 `npm login --registry=https://registry.npmjs.org/`，再用 `npm whoami` 确认登录状态。
 3. 确保工作区已提交，并确认 `package.json` 中的版本尚未发布。
 
-包名 `agile-knowledge-graph` 用于公共发布，`publishConfig` 会将目标固定为官方 npm registry。不要把 npm Token 写入 `.npmrc` 或提交到仓库。
+包名 `@agilehub/knowledge-graph` 用于公共发布，`publishConfig` 会将目标固定为官方 npm registry。不要把 npm Token 写入 `.npmrc` 或提交到仓库。
 
 ## 本地发布
 

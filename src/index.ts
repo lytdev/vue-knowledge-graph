@@ -20,5 +20,5 @@ export { install, GraphVisualization, GraphToolbar, KnowledgeGraph }
 // 自动导出（UMD）- 默认导出
 export default {
   install,
-  version: '1.0.0'
+  version: __PACKAGE_VERSION__,
 }

@@ -2,10 +2,11 @@ import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig, type Plugin } from 'vite'
 import dts from 'vite-plugin-dts'
+import packageJson from './package.json' with { type: 'json' }
 
 /** Inject component CSS once so consumers do not need a separate style import. */
 function inlineAllCss(): Plugin {
-  const styleId = 'agile-knowledge-graph-styles'
+  const styleId = 'knowledge-graph-styles'
 
   return {
     name: 'inline-all-css',
@@ -38,6 +39,9 @@ function inlineAllCss(): Plugin {
 }
 
 export default defineConfig({
+  define: {
+    __PACKAGE_VERSION__: JSON.stringify(packageJson.version),
+  },
   plugins: [
     vue(),
     dts({
@@ -59,9 +63,9 @@ export default defineConfig({
     sourcemap: true,
     lib: {
       entry: resolve(import.meta.dirname, 'src/index.ts'),
-      name: 'AgileKnowledgeGraph',
+      name: 'KnowledgeGraph',
       formats: ['es', 'cjs'],
-      fileName: (format) => `agile-knowledge-graph.${format === 'es' ? 'mjs' : 'cjs'}`,
+      fileName: (format) => `knowledge-graph.${format === 'es' ? 'mjs' : 'cjs'}`,
     },
     rollupOptions: {
       external: ['vue', '@antv/g6'],

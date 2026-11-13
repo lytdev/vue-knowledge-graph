@@ -174,7 +174,7 @@ function fitView() {
   <div class="demo-shell">
     <header class="demo-header">
       <div>
-        <span class="eyebrow">AGILE KNOWLEDGE GRAPH / DEV</span>
+        <span class="eyebrow">KNOWLEDGE GRAPH / DEV</span>
         <h1>知识图谱调试台</h1>
         <p>直接修改数据，检查组件的渲染、布局和交互。</p>
       </div>
