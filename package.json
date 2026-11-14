@@ -1,6 +1,6 @@
 {
   "name": "@agilehub/vue-knowledge-graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vue 3 知识图谱可视化组件，基于 AntV G6",
   "type": "module",
   "main": "./dist/vue-knowledge-graph.cjs",
