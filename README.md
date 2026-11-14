@@ -1,102 +1,279 @@
 # @agilehub/vue-knowledge-graph
 
-Vue 3 知识图谱可视化组件，基于 AntV G6。支持力导向、环形、同心圆和层级树形布局，以及节点聚焦和交互式图谱调试页。
+基于 Vue 3 和 AntV G6 的知识图谱可视化组件。业务端只需要准备节点和关系数据，即可获得可缩放、可拖动、可筛选、支持多种布局的知识图谱。
+
+## 功能
+
+- 支持力导向、环形、同心圆、有向层级、缩进树和思维导图布局
+- 支持鼠标滚轮缩放、空白画布左键拖动、节点拖动
+- 支持节点点击事件和节点聚焦
+- 支持业务字段名映射
+- 支持节点类型颜色和边标签颜色自定义
+- 支持节点类型筛选图例
+- 支持可拖动、可折叠、可隐藏的图谱工具栏
+- 自动注入组件样式，无需单独引入 CSS
+
+## 环境要求
+
+- Vue 3.2+
+- `@antv/g6` 5.1+
+- 推荐使用 TypeScript
+
+本地开发建议使用 Node.js 20.19+。
 
 ## 安装
+
+```bash
+pnpm add @agilehub/vue-knowledge-graph @antv/g6 vue
+```
+
+也可以使用 npm：
 
 ```bash
 npm install @agilehub/vue-knowledge-graph @antv/g6 vue
 ```
 
-## 依赖
+`vue` 和 `@antv/g6` 是组件的 peer dependencies，需要业务项目自行安装。
 
-- Vue 3.2+
-- @antv/g6 ^5.1.1
+## 5 分钟快速开始
 
-这两个包是 peer dependencies，使用本库的项目需要自行安装。
-
-## 快速开始
+下面是一个可以直接放进业务页面的完整组件：
 
 ```vue
 <template>
-  <div style="width: 100%; height: 600px;">
+  <div class="knowledge-graph-page">
     <GraphVisualization
       :nodes="nodes"
       :edges="edges"
+      @node-click="handleNodeClick"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { GraphVisualization } from '@agilehub/vue-knowledge-graph'
+import {
+  GraphVisualization,
+  type GraphEdge,
+  type GraphNode,
+} from '@agilehub/vue-knowledge-graph'
 
-const nodes = ref([
+const nodes = ref<GraphNode[]>([
   { id: '1', label: '人工智能', type: '概念' },
   { id: '2', label: '机器学习', type: '概念' },
-  { id: '3', label: '深度学习', type: '概念' }
+  { id: '3', label: '深度学习', type: '概念' },
 ])
 
-const edges = ref([
-  { source: '1', target: '2', label: '包含', relation_type: '所属' },
-  { source: '2', target: '3', label: '属于', relation_type: '所属' }
+const edges = ref<GraphEdge[]>([
+  {
+    source: '1',
+    target: '2',
+    label: '包含',
+    relation_type: '所属',
+  },
+  {
+    source: '2',
+    target: '3',
+    label: '包含',
+    relation_type: '所属',
+  },
 ])
+
+const handleNodeClick = (node: GraphNode) => {
+  console.log('点击节点：', node)
+}
 </script>
+
+<style scoped>
+.knowledge-graph-page {
+  width: 100%;
+  height: 600px;
+  min-height: 400px;
+}
+</style>
 ```
 
-## 组件
+> 外层容器必须有明确的高度。高度为 `0` 时无法绘制图谱。
 
-### GraphVisualization
+## 数据格式
 
-知识图谱可视化组件。
+### 节点
 
-#### Props
+```ts
+interface GraphNode {
+  id: string
+  label: string
+  type?: string
+  size?: number
+  x?: number
+  y?: number
+  style?: {
+    fill?: string
+    stroke?: string
+    lineWidth?: number
+  }
+  [key: string]: unknown
+}
+```
+
+- `id`：节点唯一标识。
+- `label`：画布中显示的节点名称。
+- `type`：节点类型，用于颜色和类型筛选。
+- `style.fill`：节点自身颜色，优先级最高。
+- 其他业务字段会保留在节点对象和 G6 节点数据中。
+
+### 边
+
+```ts
+interface GraphEdge {
+  id?: string
+  source: string
+  target: string
+  label?: string
+  relation_type?: string
+  style?: {
+    stroke?: string
+    lineWidth?: number
+  }
+}
+```
+
+- `source` 和 `target` 必须对应一个已存在节点的 `id`。
+- `label`：画布中显示的边文字，也可以用于边颜色映射。
+- `relation_type`：未配置 `edgeLabelColors` 时，用于默认关系配色。
+- `style.stroke`：边自身颜色，优先级最高。
+
+最小数据示例：
+
+```ts
+const nodes = [
+  { id: 'a', label: '知识工程', type: '概念' },
+  { id: 'b', label: '知识图谱', type: '概念' },
+]
+
+const edges = [
+  {
+    source: 'a',
+    target: 'b',
+    label: '应用于',
+    relation_type: '相关',
+  },
+]
+```
+
+## GraphVisualization
+
+### Props
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| nodes | `GraphNode[]` | 必填 | 节点数据 |
-| edges | `GraphEdge[]` | 必填 | 关系数据，`source` 和 `target` 必须引用已有节点 ID |
-| width | `number` | `0` | 画布宽度，0 表示自适应容器 |
-| height | `number` | `0` | 画布高度，0 表示自适应容器 |
-| layoutType | `LayoutType` | `'force'` | 默认布局类型，传入后初始化并随参数变化自动切换 |
-| nodeFieldMap | `NodeFieldMap` | 标准字段 | 业务节点字段到 `id`、`label`、`type` 的映射 |
-| edgeFieldMap | `EdgeFieldMap` | 标准字段 | 业务边字段到 `id`、`source`、`target`、`label`、`relation_type` 的映射 |
-| nodeTypeColors | `GraphColorMap` | 内置配色 | 节点 `type` 到显示颜色的映射 |
-| edgeLabelColors | `GraphColorMap` | 内置配色 | 边 `label` 到显示颜色的映射 |
+| nodes | `object[]` | 必填 | 节点数据 |
+| edges | `object[]` | 必填 | 边数据 |
+| width | `number` | `0` | 画布宽度，`0` 表示使用容器宽度 |
+| height | `number` | `0` | 画布高度，`0` 表示使用容器高度 |
+| layoutType | `LayoutType` | `'force'` | 初始和当前布局类型，参数变化时自动切换 |
+| nodeFieldMap | `NodeFieldMap` | 标准字段 | 业务节点字段到标准字段的映射 |
+| edgeFieldMap | `EdgeFieldMap` | 标准字段 | 业务边字段到标准字段的映射 |
+| nodeTypeColors | `GraphColorMap` | 内置配色 | 节点 `type` 到颜色的映射 |
+| edgeLabelColors | `GraphColorMap` | 内置配色 | 边 `label` 到颜色的映射 |
 | showTypeFilter | `boolean` | `true` | 是否显示节点类型筛选图例 |
 
-#### 设置默认图类型
+### Events
 
-业务端通过 `layout-type` 参数设置组件初始化时使用的图类型：
+| 事件 | 参数 | 说明 |
+|------|------|------|
+| nodeClick | `GraphNode` | 点击节点时触发 |
+
+```vue
+<GraphVisualization
+  :nodes="nodes"
+  :edges="edges"
+  @node-click="handleNodeClick"
+/>
+```
+
+如果使用了字段映射，`nodeClick` 返回的是转换后的节点对象，既包含 `id`、`label`、`type` 等标准字段，也保留原始业务字段。
+
+### 公开方法
+
+通过模板 ref 调用：
+
+```vue
+<template>
+  <GraphVisualization
+    ref="graphRef"
+    :nodes="nodes"
+    :edges="edges"
+  />
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { GraphVisualization } from '@agilehub/vue-knowledge-graph'
+
+const graphRef = ref<InstanceType<typeof GraphVisualization> | null>(null)
+
+const fitView = () => graphRef.value?.fitView()
+const resetLayout = () => graphRef.value?.resetLayout()
+const focusFirstNode = () => graphRef.value?.focusNode('1')
+const switchToMindmap = () => graphRef.value?.switchLayout('mindmap')
+</script>
+```
+
+| 方法 | 说明 |
+|------|------|
+| `fitView()` | 缩放并平移图谱以适配画布 |
+| `resetLayout()` | 清除现有节点位置并重新布局 |
+| `switchLayout(type)` | 切换到指定布局 |
+| `getLayoutType()` | 获取当前布局类型 |
+| `focusNode(nodeId)` | 将指定节点聚焦到画布中心 |
+
+## 布局类型
+
+`LayoutType` 支持：
+
+| 值 | 名称 | 适用场景 |
+|---|---|---|
+| `force` | 力导向 | 普通关系网络、关系较密集的数据 |
+| `circular` | 环形 | 观察整体结构、节点分布 |
+| `concentric` | 同心圆 | 按连接度突出核心和外围节点 |
+| `antv-dagre` | 有向层级 | DAG、流程、方向明确的层级数据 |
+| `indented` | 缩进树 | 目录、章节等近树结构 |
+| `mindmap` | 思维导图 | 中心主题向多个分支展开 |
+
+设置默认布局：
 
 ```vue
 <script setup lang="ts">
-import { GraphVisualization, type LayoutType } from '@agilehub/vue-knowledge-graph'
+import { ref } from 'vue'
+import {
+  GraphVisualization,
+  type LayoutType,
+} from '@agilehub/vue-knowledge-graph'
 
-const defaultLayout: LayoutType = 'concentric'
+const layoutType = ref<LayoutType>('circular')
 </script>
 
 <template>
   <GraphVisualization
     :nodes="nodes"
     :edges="edges"
-    :layout-type="defaultLayout"
+    :layout-type="layoutType"
   />
 </template>
 ```
 
-也可以直接传入固定值，例如 `<GraphVisualization layout-type="circular" />`。支持的类型为：
+树形布局更适合每个子节点只有一个父节点的数据。存在多父节点或环路时，优先使用网络布局。
 
-- `force`：力导向
-- `circular`：环形
-- `concentric`：同心圆
-- `antv-dagre`：有向层级
-- `indented`：缩进树
-- `mindmap`：思维导图
+`GRAPH_LAYOUT_OPTIONS` 可从包入口导入，用于业务端自行生成布局选择器：
 
-#### 自定义业务字段
+```ts
+import { GRAPH_LAYOUT_OPTIONS } from '@agilehub/vue-knowledge-graph'
+```
 
-如果业务数据的字段名与组件标准字段不同，可以通过 `nodeFieldMap` 和 `edgeFieldMap` 转换：
+## 业务字段名映射
+
+如果业务字段名和组件标准字段不同，不需要先转换数据，可以直接传入映射：
 
 ```vue
 <script setup lang="ts">
@@ -107,8 +284,8 @@ import {
 } from '@agilehub/vue-knowledge-graph'
 
 const nodes = [
-  { nodeId: 'a', name: '知识工程', category: '概念', score: 98 },
-  { nodeId: 'b', name: '知识图谱', category: '概念', score: 96 },
+  { nodeId: 'a', name: '知识工程', category: '概念' },
+  { nodeId: 'b', name: '知识图谱', category: '概念' },
 ]
 
 const edges = [
@@ -116,8 +293,8 @@ const edges = [
     edgeId: 'e1',
     from: 'a',
     to: 'b',
-    name: '应用于',
-    relation: '相关',
+    relationName: '包含',
+    relationType: '所属',
   },
 ]
 
@@ -131,8 +308,8 @@ const edgeFieldMap: EdgeFieldMap = {
   id: 'edgeId',
   source: 'from',
   target: 'to',
-  label: 'name',
-  relationType: 'relation',
+  label: 'relationName',
+  relationType: 'relationType',
 }
 </script>
 
@@ -146,11 +323,9 @@ const edgeFieldMap: EdgeFieldMap = {
 </template>
 ```
 
-映射后，组件会保留原始业务字段，同时生成标准的 `GraphNode` 和 `GraphEdge` 字段供 G6 使用。`nodeClick` 事件返回转换后的节点对象，标准字段和原始业务字段都可以访问。
+当前映射针对顶层字段名。映射完成后，组件会保留原始字段并生成标准字段。
 
-#### 自定义节点和边颜色
-
-业务端可以通过节点 `type` 和边 `label` 定义业务配色：
+## 节点类型和边标签颜色
 
 ```vue
 <script setup lang="ts">
@@ -183,17 +358,43 @@ const edgeLabelColors: GraphColorMap = {
 
 颜色优先级：
 
-- 节点：`node.style.fill` > `nodeTypeColors[type]` > 内置节点类型配色
-- 边：`edge.style.stroke` > `edgeLabelColors[label]` > `relation_type` 内置配色
+1. 节点：`node.style.fill` > `nodeTypeColors[type]` > 内置节点配色
+2. 边：`edge.style.stroke` > `edgeLabelColors[label]` > 内置 `relation_type` 配色
 
-#### 节点类型筛选
+### 内置节点配色
 
-组件会在画布底部自动生成节点类型筛选图例，展示所有节点的 `type` 值及对应颜色。点击某个类型可以隐藏该类型节点以及与其相连的边，再次点击即可恢复显示。图例支持：
+| 类型 | 颜色 |
+|---|---|
+| 人物 | `#ff4d4f` |
+| 地点 | `#52c41a` |
+| 组织 | `#1890ff` |
+| 概念 | `#faad14` |
+| 事件 | `#722ed1` |
+| 其他 | `#13c2c2` |
 
-- 通过 `⠿` 手柄拖动到画布内任意位置
-- 点击折叠按钮收起全部类型项，并默认停靠到画布右侧；再次点击展开
-- 折叠或展开后自动校正位置，避免超出画布
-- 类型项超出可用宽度时显示左右箭头，点击可横向滚动查看更多类型
+### 内置关系配色
+
+| 关系类型 | 颜色 |
+|---|---|
+| 因果 | `#e74c3c` |
+| 所属 | `#2ecc71` |
+| 引用 | `#3498db` |
+| 相关 | `#9b59b6` |
+
+## 节点类型筛选
+
+组件会在画布底部自动生成节点类型图例：
+
+- 自动收集所有节点 `type`
+- 点击类型可隐藏对应节点和关联边
+- 再次点击恢复显示
+- 支持拖动图例
+- 支持折叠图例
+- 折叠后默认停靠到右侧
+- 类型较多时显示左右滚动按钮
+- 无类型的节点归入“未分类”
+
+显示筛选图例：
 
 ```vue
 <GraphVisualization
@@ -204,122 +405,38 @@ const edgeLabelColors: GraphColorMap = {
 />
 ```
 
-将 `showTypeFilter` 设置为 `false` 可以隐藏整个类型筛选图例。没有 `type` 的节点会归入“未分类”。
-
-#### Events
-
-| 事件名 | 参数 | 说明 |
-|--------|------|------|
-| nodeClick | `GraphNode` | 点击节点时触发，返回被点击的节点数据 |
+隐藏筛选图例：
 
 ```vue
 <GraphVisualization
   :nodes="nodes"
   :edges="edges"
-  @node-click="handleNodeClick"
+  :show-type-filter="false"
 />
 ```
 
-```typescript
-import type { GraphNode } from '@agilehub/vue-knowledge-graph'
+## GraphToolbar
 
-const handleNodeClick = (node: GraphNode) => {
-  console.log(node.id)
-}
-```
+`GraphToolbar` 是一个可独立放置的工具栏，提供：
 
-#### 节点数据类型 (GraphNode)
+- 适应画布
+- 重置布局
+- 切换图类型
+- 工具栏拖动
+- 折叠和展开
 
-```typescript
-interface GraphNode {
-  id: string          // 唯一标识
-  label: string       // 显示文本
-  type?: string       // 节点类型（用于配色）
-  size?: number       // 节点大小
-  style?: {
-    fill?: string     // 填充色
-    stroke?: string   // 边框色
-    lineWidth?: number // 边框宽度
-  }
-  x?: number          // 初始 X 坐标
-  y?: number          // 初始 Y 坐标
-  [key: string]: unknown // 自定义属性，值可以是字符串、数字、对象等
-}
-```
-
-自定义属性会保留在 `nodeClick` 事件参数和 G6 节点 `data` 中。需要强类型访问时可以扩展 `GraphNode`：
-
-```typescript
-import type { GraphNode } from '@agilehub/vue-knowledge-graph'
-
-interface ArticleNode extends GraphNode {
-  score: number
-  bookCode: string
-}
-
-const nodes: ArticleNode[] = [
-  {
-    id: '1',
-    label: '金融资产',
-    type: '概念',
-    score: 98,
-    bookCode: 'b087892de9ef4108ae952267adf8e0db',
-  },
-]
-```
-
-#### 边数据类型 (GraphEdge)
-
-```typescript
-interface GraphEdge {
-  id?: string         // 可选；未提供时组件自动生成
-  source: string      // 源节点 ID
-  target: string      // 目标节点 ID
-  label?: string      // 关系标签
-  relation_type?: string // 关系类型（用于配色）
-  style?: {
-    stroke?: string   // 线条颜色
-    lineWidth?: number // 线条宽度
-  }
-}
-```
-
-#### 公开方法
-
-`GraphVisualization` 通过模板 ref 暴露 `fitView()`、`resetLayout()`、`switchLayout(type)`、`getLayoutType()` 和 `focusNode(nodeId)`。`type` 使用导出的 `LayoutType`，例如 `graphRef.value?.switchLayout('mindmap')`。组件挂载后再调用这些方法。
-
-### GraphToolbar
-
-图谱工具栏组件，提供布局切换等功能。
-
-#### Props
-
-| 属性 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| layoutType | `LayoutType` | `'force'` | 当前布局类型 |
-| showLayoutControl | `boolean` | `true` | 是否显示图类型选择控件 |
-
-#### Events
-
-| 事件名 | 说明 |
-|--------|------|
-| fitView | 点击"适应画布"时触发 |
-| resetLayout | 点击"重置布局"时触发 |
-| switchLayout | 下拉框切换布局时触发，参数为 `LayoutType` |
-| switchToForce | 兼容事件；切换到力导向时触发 |
-| switchToCircular | 兼容事件；切换到环形时触发 |
-
-#### 使用示例
+工具栏使用绝对定位，因此父容器必须设置 `position: relative`。
 
 ```vue
 <template>
-  <div style="width: 100%; height: 600px; position: relative;">
+  <div class="graph-workspace">
     <GraphVisualization
       ref="graphRef"
       :nodes="nodes"
       :edges="edges"
       :layout-type="layoutType"
     />
+
     <GraphToolbar
       :layout-type="layoutType"
       @fit-view="handleFitView"
@@ -331,27 +448,40 @@ interface GraphEdge {
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { GraphVisualization, GraphToolbar, type LayoutType } from '@agilehub/vue-knowledge-graph'
+import {
+  GraphToolbar,
+  GraphVisualization,
+  type LayoutType,
+} from '@agilehub/vue-knowledge-graph'
 
-const nodes = ref([
-  { id: '1', label: '人工智能', type: '概念' },
-  { id: '2', label: '机器学习', type: '概念' }
-])
-const edges = ref([
-  { source: '1', target: '2', label: '包含', relation_type: '所属' }
-])
 const graphRef = ref<InstanceType<typeof GraphVisualization> | null>(null)
 const layoutType = ref<LayoutType>('force')
 
 const handleFitView = () => graphRef.value?.fitView()
 const handleResetLayout = () => graphRef.value?.resetLayout()
+
 const handleSwitchLayout = (type: LayoutType) => {
   layoutType.value = type
 }
 </script>
+
+<style scoped>
+.graph-workspace {
+  position: relative;
+  width: 100%;
+  height: 600px;
+}
+</style>
 ```
 
-如业务端不需要让用户切换图类型，可以隐藏图类型控件：
+### GraphToolbar Props
+
+| 属性 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| layoutType | `LayoutType` | `'force'` | 当前布局 |
+| showLayoutControl | `boolean` | `true` | 是否显示图类型选择控件 |
+
+隐藏图类型选择器：
 
 ```vue
 <GraphToolbar
@@ -362,102 +492,161 @@ const handleSwitchLayout = (type: LayoutType) => {
 />
 ```
 
-## 交互功能
+### GraphToolbar Events
 
-- **缩放画布**: 鼠标滚轮
-- **拖拽节点**: 拖动节点可移动位置，相邻节点会跟随移动
-- **拖动画布**: 在画布空白区域按住鼠标左键拖动
-- **悬停高亮**: 鼠标悬停在节点上时，相关节点和边高亮，其他节点变暗
-- **点击选中**: 点击节点选中并高亮相关节点，再次点击取消
-- **点击空白**: 点击空白处取消所有高亮
+| 事件 | 参数 | 说明 |
+|---|---|---|
+| fitView | 无 | 点击“适应画布” |
+| resetLayout | 无 | 点击“重置布局” |
+| switchLayout | `LayoutType` | 选择新的布局类型 |
+| switchToForce | 无 | 兼容事件，切换到力导向时触发 |
+| switchToCircular | 无 | 兼容事件，切换到环形时触发 |
 
-## 布局说明
+## 在 el-dialog 中使用
 
-组件不限定数据语义，所有布局都消费相同的 `nodes + edges`。`GRAPH_LAYOUT_OPTIONS` 导出完整布局清单，可用于自定义选择器。
+弹窗中最重要的两点是：
 
-- **网络布局**: `force`、`circular`、`concentric`
-- **层级布局**: `antv-dagre`、`indented`、`mindmap`
-
-树形布局更适合每个子节点只有一个父节点的数据；普通网络或存在多父节点、环路的图谱优先使用力导向、环形或同心圆布局。
-
-## 节点/边颜色
-
-未传入 `nodeTypeColors` 和 `edgeLabelColors` 时，根据节点 `type` 和边 `relation_type` 使用以下默认配色：
-
-### 节点类型颜色
-
-| 类型 | 颜色 |
-|------|------|
-| 人物 | #ff4d4f |
-| 地点 | #52c41a |
-| 组织 | #1890ff |
-| 概念 | #faad14 |
-| 事件 | #722ed1 |
-| 其他 | #13c2c2 |
-
-### 关系类型颜色
-
-| 类型 | 颜色 |
-|------|------|
-| 因果 | #e74c3c |
-| 所属 | #2ecc71 |
-| 引用 | #3498db |
-| 相关 | #9b59b6 |
-
-## 作为 Vue 插件使用
-
-```js
-import { createApp } from 'vue'
-import KnowledgeGraph from '@agilehub/vue-knowledge-graph'
-import App from './App.vue'
-
-const app = createApp(App)
-app.use(KnowledgeGraph)
-app.mount('#app')
-```
-
-然后在组件中直接使用：
+1. 图谱容器必须有明确高度。
+2. 弹窗打开并完成渲染后再调用 `fitView()`。
 
 ```vue
 <template>
-  <GraphVisualization :nodes="nodes" :edges="edges" />
+  <el-dialog
+    v-model="dialogVisible"
+    title="知识图谱"
+    width="900px"
+    destroy-on-close
+    @opened="handleOpened"
+  >
+    <div class="dialog-graph">
+      <GraphVisualization
+        v-if="dialogVisible"
+        ref="graphRef"
+        :nodes="nodes"
+        :edges="edges"
+        :node-type-colors="nodeTypeColors"
+      />
+    </div>
+  </el-dialog>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { GraphVisualization } from '@agilehub/vue-knowledge-graph'
+
+const dialogVisible = ref(false)
+const graphRef = ref<InstanceType<typeof GraphVisualization> | null>(null)
+
+const handleOpened = () => {
+  graphRef.value?.fitView()
+}
+</script>
+
+<style scoped>
+.dialog-graph {
+  width: 100%;
+  height: min(70vh, 720px);
+  min-height: 480px;
+}
+</style>
 ```
 
-## 本地开发
+建议同时使用：
 
-开发调试页使用 Vite，建议 Node.js 20.19+，并使用仓库锁文件对应的 pnpm。
+- `destroy-on-close`：每次打开弹窗重新创建图谱
+- `v-if="dialogVisible"`：避免在隐藏容器中初始化画布
+- `@opened`：等弹窗动画结束后再适配画布
+
+## 作为 Vue 插件使用
+
+```ts
+import { createApp } from 'vue'
+import KnowledgeGraphPlugin from '@agilehub/vue-knowledge-graph'
+import App from './App.vue'
+
+const app = createApp(App)
+app.use(KnowledgeGraphPlugin)
+app.mount('#app')
+```
+
+注册后可直接使用：
+
+```vue
+<GraphVisualization :nodes="nodes" :edges="edges" />
+<GraphToolbar :layout-type="layoutType" />
+```
+
+## 交互说明
+
+| 操作 | 效果 |
+|---|---|
+| 鼠标滚轮 | 缩放画布 |
+| 画布空白处按住左键拖动 | 平移画布 |
+| 拖动节点 | 移动节点及其关联节点 |
+| 点击节点 | 触发 `nodeClick`，并选中和高亮节点 |
+| 点击空白 | 取消高亮 |
+
+## 常见问题
+
+### 画布是空白的
+
+检查父容器是否设置了明确高度：
+
+```css
+.graph-container {
+  width: 100%;
+  height: 600px;
+}
+```
+
+### 节点显示了，但边没有显示
+
+确认：
+
+- `edge.source` 和 `edge.target` 与节点 `id` 完全一致
+- 业务字段不同时已配置 `edgeFieldMap`
+- ID 没有被转换成不一致的字符串
+
+### 业务字段不同怎么办
+
+使用 `nodeFieldMap` 和 `edgeFieldMap`，不需要提前修改业务数据。
+
+### 节点或边颜色没有生效
+
+颜色优先级为：
+
+- 节点自身 `style.fill`
+- `nodeTypeColors[type]`
+- 内置颜色
+
+- 边自身 `style.stroke`
+- `edgeLabelColors[label]`
+- 内置 `relation_type` 颜色
+
+### 类型筛选后节点不见了
+
+再次点击对应类型图例即可恢复。如果不需要筛选图例，可设置：
+
+```vue
+<GraphVisualization
+  :show-type-filter="false"
+/>
+```
+
+### 树形布局显示异常
+
+`indented` 和 `mindmap` 更适合单父节点的树结构。存在多父节点或环路时，请使用 `force`、`circular` 或 `concentric`。
+
+## 本地开发
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-打开终端输出的本地地址（通常是 `http://localhost:5173/`）。调试页直接引用 `src/index.ts`，修改组件源码后可通过热更新查看效果。
+调试页通常运行在 `http://localhost:5173/`。
 
-### 调试页操作
-
-1. **加载数据**：选择“知识网络”“人物关系”或“空画布”。
-2. **添加节点和第一条关系**：填写节点名称、类型；在“连接到现有节点”中选择目标，填写关系名称和类型，再选择箭头方向，点击“添加节点”。选择“不建立关系”可创建孤立节点。节点 ID 由调试页自动生成，格式为 `demo-1`、`demo-2` 等。
-3. **为节点添加更多关系**：在“当前节点”中选起点，在“为已有节点添加关系”中选目标、关系名称和类型，点击“添加关系”。关系从当前节点指向目标节点，可重复操作。删除节点会同时删除与它相连的关系。
-4. **查看图谱行为**：可聚焦节点，并通过图谱工具栏适应画布、重置布局或切换力导向与环形布局。画布支持滚轮缩放、拖动节点和在空白区域按住鼠标左键拖动画布。
-5. **调试自己的数据**：在 `GraphData JSON` 编辑器中粘贴 `nodes` 和 `edges`，点击“应用 JSON”。编辑器会检查 JSON 格式、节点 ID 是否重复，以及关系端点是否存在；校验失败时保留当前图谱。
-
-例如，可粘贴下面的数据，验证节点和关系的渲染：
-
-```json
-{
-  "nodes": [
-    { "id": "a", "label": "知识工程", "type": "概念" },
-    { "id": "b", "label": "知识图谱", "type": "概念" }
-  ],
-  "edges": [
-    { "source": "a", "target": "b", "label": "应用于", "relation_type": "相关" }
-  ]
-}
-```
-
-修改完成后运行：
+提交或发布前运行：
 
 ```bash
 pnpm check
