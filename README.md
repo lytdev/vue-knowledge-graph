@@ -63,6 +63,7 @@ const edges = ref([
 | edgeFieldMap | `EdgeFieldMap` | 标准字段 | 业务边字段到 `id`、`source`、`target`、`label`、`relation_type` 的映射 |
 | nodeTypeColors | `GraphColorMap` | 内置配色 | 节点 `type` 到显示颜色的映射 |
 | edgeLabelColors | `GraphColorMap` | 内置配色 | 边 `label` 到显示颜色的映射 |
+| showTypeFilter | `boolean` | `true` | 是否显示节点类型筛选图例 |
 
 #### 设置默认图类型
 
@@ -184,6 +185,26 @@ const edgeLabelColors: GraphColorMap = {
 
 - 节点：`node.style.fill` > `nodeTypeColors[type]` > 内置节点类型配色
 - 边：`edge.style.stroke` > `edgeLabelColors[label]` > `relation_type` 内置配色
+
+#### 节点类型筛选
+
+组件会在画布底部自动生成节点类型筛选图例，展示所有节点的 `type` 值及对应颜色。点击某个类型可以隐藏该类型节点以及与其相连的边，再次点击即可恢复显示。图例支持：
+
+- 通过 `⠿` 手柄拖动到画布内任意位置
+- 点击折叠按钮收起全部类型项，并默认停靠到画布右侧；再次点击展开
+- 折叠或展开后自动校正位置，避免超出画布
+- 类型项超出可用宽度时显示左右箭头，点击可横向滚动查看更多类型
+
+```vue
+<GraphVisualization
+  :nodes="nodes"
+  :edges="edges"
+  :node-type-colors="nodeTypeColors"
+  :show-type-filter="true"
+/>
+```
+
+将 `showTypeFilter` 设置为 `false` 可以隐藏整个类型筛选图例。没有 `type` 的节点会归入“未分类”。
 
 #### Events
 

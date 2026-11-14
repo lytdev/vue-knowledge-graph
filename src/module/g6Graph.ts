@@ -25,6 +25,20 @@ export type LayoutType =
 export type GraphLayoutCategory = 'network' | 'hierarchy'
 export type GraphColorMap = Record<string, string>
 
+export const DEFAULT_NODE_TYPE_COLORS: Readonly<GraphColorMap> = {
+  人物: '#ff4d4f',
+  地点: '#52c41a',
+  组织: '#1890ff',
+  概念: '#faad14',
+  事件: '#722ed1',
+  entity: '#13c2c2',
+}
+
+export function resolveNodeColor(type?: string, colors: GraphColorMap = {}): string {
+  const typeKey = type || 'entity'
+  return colors[typeKey] || DEFAULT_NODE_TYPE_COLORS[typeKey] || '#13c2c2'
+}
+
 export interface GraphLayoutOption {
   value: LayoutType
   label: string
@@ -234,16 +248,7 @@ export class KnowledgeGraph extends BaseG6Graph {
   }
 
   private getColorByType(entityType?: string): string {
-    const colors: Record<string, string> = {
-      人物: '#ff4d4f',
-      地点: '#52c41a',
-      组织: '#1890ff',
-      概念: '#faad14',
-      事件: '#722ed1',
-      entity: '#13c2c2',
-    }
-    const type = entityType || 'entity'
-    return this.nodeTypeColors[type] || colors[type] || '#13c2c2'
+    return resolveNodeColor(entityType, this.nodeTypeColors)
   }
 
   private getColorByRelation(relationType?: string): string {
