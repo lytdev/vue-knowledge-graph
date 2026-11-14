@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   GRAPH_LAYOUT_OPTIONS,
   type GraphLayoutCategory,
@@ -24,6 +24,11 @@ const emit = defineEmits<{
 
 const collapsed = ref(false)
 const selectedLayout = ref<LayoutType>(props.layoutType)
+const toolbarRef = ref<HTMLElement | null>(null)
+const position = ref<{ left: number; top: number } | null>(null)
+const isDragging = ref(false)
+let dragOffset = { x: 0, y: 0 }
+let dragPointerId: number | null = null
 
 const layoutGroups: Array<{ category: GraphLayoutCategory; label: string }> = [
   { category: 'network', label: '关系网络' },
@@ -63,13 +68,113 @@ watch(
 const toggleCollapse = () => {
   collapsed.value = !collapsed.value
 }
+
+const toolbarStyle = computed(() => {
+  if (!position.value) return undefined
+  return {
+    left: `${position.value.left}px`,
+    top: `${position.value.top}px`,
+    right: 'auto',
+  }
+})
+
+const clampPosition = (left: number, top: number) => {
+  const toolbar = toolbarRef.value
+  const parent = toolbar?.offsetParent as HTMLElement | null
+  if (!toolbar || !parent) return { left, top }
+
+  const parentRect = parent.getBoundingClientRect()
+  const maxLeft = Math.max(0, (parent.clientWidth || parentRect.width) - toolbar.offsetWidth)
+  const maxTop = Math.max(0, (parent.clientHeight || parentRect.height) - toolbar.offsetHeight)
+
+  return {
+    left: Math.min(Math.max(0, left), maxLeft),
+    top: Math.min(Math.max(0, top), maxTop),
+  }
+}
+
+const constrainPosition = () => {
+  if (!position.value) return
+  position.value = clampPosition(position.value.left, position.value.top)
+}
+
+const startDrag = (event: PointerEvent) => {
+  if (event.button !== 0) return
+
+  const target = event.target as HTMLElement
+  const isHandle = Boolean(target.closest('.kg-drag-handle'))
+  const isInteractive = Boolean(target.closest('button, select, input, textarea, label, a'))
+  if (isInteractive && !isHandle) return
+
+  const toolbar = toolbarRef.value
+  const parent = toolbar?.offsetParent as HTMLElement | null
+  if (!toolbar || !parent) return
+
+  const toolbarRect = toolbar.getBoundingClientRect()
+  const parentRect = parent.getBoundingClientRect()
+  position.value = {
+    left: toolbarRect.left - parentRect.left,
+    top: toolbarRect.top - parentRect.top,
+  }
+  dragOffset = {
+    x: event.clientX - toolbarRect.left,
+    y: event.clientY - toolbarRect.top,
+  }
+  dragPointerId = event.pointerId
+  isDragging.value = true
+  toolbar.setPointerCapture?.(event.pointerId)
+  event.preventDefault()
+}
+
+const moveDrag = (event: PointerEvent) => {
+  if (!isDragging.value || dragPointerId !== event.pointerId) return
+
+  const toolbar = toolbarRef.value
+  const parent = toolbar?.offsetParent as HTMLElement | null
+  if (!toolbar || !parent) return
+
+  const parentRect = parent.getBoundingClientRect()
+  position.value = clampPosition(
+    event.clientX - parentRect.left - dragOffset.x,
+    event.clientY - parentRect.top - dragOffset.y,
+  )
+  event.preventDefault()
+}
+
+const endDrag = (event: PointerEvent) => {
+  if (!isDragging.value || dragPointerId !== event.pointerId) return
+
+  isDragging.value = false
+  dragPointerId = null
+  if (toolbarRef.value?.hasPointerCapture?.(event.pointerId)) {
+    toolbarRef.value.releasePointerCapture(event.pointerId)
+  }
+}
+
+watch(collapsed, async () => {
+  await nextTick()
+  constrainPosition()
+})
 </script>
 
 <template>
   <div
+    ref="toolbarRef"
     class="kg-toolbar"
-    :class="{ 'kg-collapsed': collapsed }"
+    :class="{ 'kg-collapsed': collapsed, 'kg-dragging': isDragging }"
+    :style="toolbarStyle"
+    @pointerdown="startDrag"
+    @pointermove="moveDrag"
+    @pointerup="endDrag"
+    @pointercancel="endDrag"
   >
+    <span
+      class="kg-drag-handle"
+      title="拖动工具栏"
+      aria-hidden="true"
+    >
+      ⠿
+    </span>
     <button
       @click="toggleCollapse"
       class="kg-btn kg-toggle"
@@ -134,6 +239,8 @@ const toggleCollapse = () => {
   position: absolute;
   top: 16px;
   right: 16px;
+  width: max-content;
+  max-width: calc(100% - 24px);
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -144,6 +251,7 @@ const toggleCollapse = () => {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   font-family: 'Segoe UI', 'PingFang SC', system-ui, sans-serif;
+  touch-action: none;
 }
 
 .kg-toolbar:hover {
@@ -157,11 +265,30 @@ const toggleCollapse = () => {
 
 .kg-btn-group {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
   align-items: center;
 }
 
+.kg-drag-handle {
+  color: #94a3b8;
+  cursor: grab;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 2px;
+  user-select: none;
+}
+
+.kg-toolbar.kg-dragging {
+  user-select: none;
+}
+
+.kg-toolbar.kg-dragging .kg-drag-handle {
+  cursor: grabbing;
+}
+
 .kg-btn {
+  flex: 0 0 auto;
   padding: 6px 12px;
   background: transparent;
   border: none;
@@ -175,6 +302,7 @@ const toggleCollapse = () => {
   align-items: center;
   gap: 5px;
   outline: none;
+  white-space: nowrap;
 }
 
 .kg-btn:hover {
@@ -195,6 +323,7 @@ const toggleCollapse = () => {
 
 .kg-layout-control {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 7px;
   padding-left: 10px;
