@@ -51,10 +51,20 @@
           :disabled="!canScrollTypeFilterLeft"
           @click="scrollTypeFilter(-1)"
         >
-          <span
+          <svg
             class="kg-type-filter-chevron kg-type-filter-chevron--left"
+            viewBox="0 0 16 16"
             aria-hidden="true"
-          ></span>
+          >
+            <path
+              d="M10 3 6 8 10 13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
         <div
           ref="typeFilterItemsRef"
@@ -88,10 +98,20 @@
           :disabled="!canScrollTypeFilterRight"
           @click="scrollTypeFilter(1)"
         >
-          <span
+          <svg
             class="kg-type-filter-chevron kg-type-filter-chevron--right"
+            viewBox="0 0 16 16"
             aria-hidden="true"
-          ></span>
+          >
+            <path
+              d="M6 3 10 8 6 13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
       </div>
     </div>
@@ -651,21 +671,10 @@ onUnmounted(() => {
 }
 
 .kg-type-filter-chevron {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  border-top: 1.5px solid currentColor;
-  border-right: 1.5px solid currentColor;
-}
-
-.kg-type-filter-chevron--left {
-  transform: translate(-50%, -50%) rotate(-135deg);
-}
-
-.kg-type-filter-chevron--right {
-  transform: translate(-50%, -50%) rotate(45deg);
+  display: block;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
 }
 
 .kg-type-filter-item {
