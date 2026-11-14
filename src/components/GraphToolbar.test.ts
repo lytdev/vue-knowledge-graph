@@ -33,6 +33,18 @@ describe('GraphToolbar', () => {
     expect((select.element as HTMLSelectElement).value).toBe('antv-dagre')
   })
 
+  it('can hide the layout selector without hiding other toolbar actions', () => {
+    const wrapper = mount(GraphToolbar, {
+      props: {
+        showLayoutControl: false,
+      },
+    })
+
+    expect(wrapper.find('.kg-layout-control').exists()).toBe(false)
+    expect(wrapper.findAll('.kg-btn-group .kg-btn')).toHaveLength(2)
+    expect(wrapper.find('.kg-toggle').exists()).toBe(true)
+  })
+
   it('emits viewport actions and supports collapsing', async () => {
     const wrapper = mount(GraphToolbar)
     const buttons = wrapper.findAll('.kg-btn-group .kg-btn')

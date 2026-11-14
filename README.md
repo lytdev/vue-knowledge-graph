@@ -59,6 +59,8 @@ const edges = ref([
 | width | `number` | `0` | 画布宽度，0 表示自适应容器 |
 | height | `number` | `0` | 画布高度，0 表示自适应容器 |
 | layoutType | `LayoutType` | `'force'` | 默认布局类型，传入后初始化并随参数变化自动切换 |
+| nodeFieldMap | `NodeFieldMap` | 标准字段 | 业务节点字段到 `id`、`label`、`type` 的映射 |
+| edgeFieldMap | `EdgeFieldMap` | 标准字段 | 业务边字段到 `id`、`source`、`target`、`label`、`relation_type` 的映射 |
 
 #### 设置默认图类型
 
@@ -88,6 +90,60 @@ const defaultLayout: LayoutType = 'concentric'
 - `antv-dagre`：有向层级
 - `indented`：缩进树
 - `mindmap`：思维导图
+
+#### 自定义业务字段
+
+如果业务数据的字段名与组件标准字段不同，可以通过 `nodeFieldMap` 和 `edgeFieldMap` 转换：
+
+```vue
+<script setup lang="ts">
+import {
+  GraphVisualization,
+  type EdgeFieldMap,
+  type NodeFieldMap,
+} from '@agilehub/vue-knowledge-graph'
+
+const nodes = [
+  { nodeId: 'a', name: '知识工程', category: '概念', score: 98 },
+  { nodeId: 'b', name: '知识图谱', category: '概念', score: 96 },
+]
+
+const edges = [
+  {
+    edgeId: 'e1',
+    from: 'a',
+    to: 'b',
+    name: '应用于',
+    relation: '相关',
+  },
+]
+
+const nodeFieldMap: NodeFieldMap = {
+  id: 'nodeId',
+  label: 'name',
+  type: 'category',
+}
+
+const edgeFieldMap: EdgeFieldMap = {
+  id: 'edgeId',
+  source: 'from',
+  target: 'to',
+  label: 'name',
+  relationType: 'relation',
+}
+</script>
+
+<template>
+  <GraphVisualization
+    :nodes="nodes"
+    :edges="edges"
+    :node-field-map="nodeFieldMap"
+    :edge-field-map="edgeFieldMap"
+  />
+</template>
+```
+
+映射后，组件会保留原始业务字段，同时生成标准的 `GraphNode` 和 `GraphEdge` 字段供 G6 使用。`nodeClick` 事件返回转换后的节点对象，标准字段和原始业务字段都可以访问。
 
 #### Events
 
@@ -180,6 +236,7 @@ interface GraphEdge {
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | layoutType | `LayoutType` | `'force'` | 当前布局类型 |
+| showLayoutControl | `boolean` | `true` | 是否显示图类型选择控件 |
 
 #### Events
 
@@ -231,6 +288,17 @@ const handleSwitchLayout = (type: LayoutType) => {
   layoutType.value = type
 }
 </script>
+```
+
+如业务端不需要让用户切换图类型，可以隐藏图类型控件：
+
+```vue
+<GraphToolbar
+  :layout-type="layoutType"
+  :show-layout-control="false"
+  @fit-view="handleFitView"
+  @reset-layout="handleResetLayout"
+/>
 ```
 
 ## 交互功能

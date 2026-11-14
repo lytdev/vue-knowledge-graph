@@ -6,28 +6,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import type { GraphNode, GraphEdge } from '../types'
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import type { GraphNode } from '../types'
 import { KnowledgeGraph, type LayoutType } from '../module/g6Graph'
+import {
+  normalizeGraphEdge,
+  normalizeGraphNode,
+  type EdgeFieldMap,
+  type NodeFieldMap,
+} from '../module/graphAdapter'
 
 interface Props {
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+  nodes: object[]
+  edges: object[]
   width?: number
   height?: number
   /** 初始布局类型，默认 force；变化时同步切换。 */
   layoutType?: LayoutType
+  /** 业务节点字段名到组件标准字段名的映射。 */
+  nodeFieldMap?: NodeFieldMap
+  /** 业务边字段名到组件标准字段名的映射。 */
+  edgeFieldMap?: EdgeFieldMap
 }
 
 const props = withDefaults(defineProps<Props>(), {
   width: 0,
   height: 0,
   layoutType: 'force',
+  nodeFieldMap: undefined,
+  edgeFieldMap: undefined,
 })
 
 const emit = defineEmits<{
   nodeClick: [node: GraphNode]
 }>()
+
+const normalizedNodes = computed(() =>
+  props.nodes.map((node) => normalizeGraphNode(node, props.nodeFieldMap))
+)
+const normalizedEdges = computed(() =>
+  props.edges.map((edge) => normalizeGraphEdge(edge, props.edgeFieldMap))
+)
 
 const containerRef = ref<HTMLElement | null>(null)
 let graph: KnowledgeGraph | null = null
@@ -67,12 +86,12 @@ const initGraph = () => {
         height: props.height || height,
         layoutType: props.layoutType,
         onNodeClick: (nodeId) => {
-          const node = props.nodes.find((item) => item.id === nodeId)
+          const node = normalizedNodes.value.find((item) => item.id === nodeId)
           if (node) emit('nodeClick', node)
         },
       },
-      props.nodes,
-      props.edges
+      normalizedNodes.value,
+      normalizedEdges.value
     )
   })
 }
@@ -83,7 +102,7 @@ const updateGraph = () => {
     return
   }
 
-  graph.update(props.nodes, props.edges)
+  graph.update(normalizedNodes.value, normalizedEdges.value)
 }
 
 const fitView = () => {
@@ -113,7 +132,7 @@ defineExpose({
 })
 
 watch(
-  () => [props.nodes, props.edges],
+  () => [props.nodes, props.edges, props.nodeFieldMap, props.edgeFieldMap],
   () => {
     if (graph) {
       updateGraph()

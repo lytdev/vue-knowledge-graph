@@ -8,10 +8,13 @@ import {
 
 interface Props {
   layoutType?: LayoutType
+  /** 是否显示图类型选择控件，默认显示。 */
+  showLayoutControl?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  layoutType: 'force'
+  layoutType: 'force',
+  showLayoutControl: true,
 })
 
 const emit = defineEmits<{
@@ -207,6 +210,7 @@ watch(collapsed, async () => {
         <span class="kg-btn-label">重置布局</span>
       </button>
       <label
+        v-if="props.showLayoutControl"
         class="kg-layout-control"
         :title="currentLayout?.description"
       >

@@ -6,6 +6,7 @@ import { GRAPH_LAYOUT_OPTIONS, KnowledgeGraph } from './module/g6Graph'
 // 导出类型
 export type { GraphNode, GraphEdge } from './types'
 export type { GraphInitOptions } from './module/g6Graph'
+export type { EdgeFieldMap, NodeFieldMap } from './module/graphAdapter'
 export type {
   GraphLayoutCategory,
   GraphLayoutOption,
