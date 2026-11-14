@@ -66,7 +66,9 @@ watch(
 )
 
 const toggleCollapse = () => {
-  collapsed.value = !collapsed.value
+  const nextCollapsed = !collapsed.value
+  if (nextCollapsed) position.value = null
+  collapsed.value = nextCollapsed
 }
 
 const toolbarStyle = computed(() => {

@@ -129,12 +129,18 @@ describe('GraphToolbar', () => {
     await wrapper.get('.kg-toggle').trigger('click')
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
+    expect(toolbarElement.style.left).toBe('')
+    expect(toolbarElement.style.top).toBe('')
+    expect(toolbarElement.style.right).toBe('')
+
     toolbarWidth = 438
     await wrapper.get('.kg-toggle').trigger('click')
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
 
-    expect(toolbarElement.style.left).toBe('362px')
+    expect(toolbarElement.style.left).toBe('')
+    expect(toolbarElement.style.top).toBe('')
+    expect(toolbarElement.style.right).toBe('')
 
     wrapper.unmount()
   })
