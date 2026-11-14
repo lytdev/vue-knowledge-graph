@@ -8,6 +8,7 @@ export type { GraphNode, GraphEdge } from './types'
 export type { GraphInitOptions } from './module/g6Graph'
 export type { EdgeFieldMap, NodeFieldMap } from './module/graphAdapter'
 export type {
+  GraphColorMap,
   GraphLayoutCategory,
   GraphLayoutOption,
   LayoutType,

@@ -7,10 +7,13 @@ const graphMock = vi.hoisted(() => ({
   initOptions: undefined as {
     layoutType?: string
     onNodeClick?: (nodeId: string) => void
+    nodeTypeColors?: Record<string, string>
+    edgeLabelColors?: Record<string, string>
   } | undefined,
   nodes: undefined as GraphNode[] | undefined,
   edges: undefined as GraphEdge[] | undefined,
   switchLayout: vi.fn(),
+  setColorMaps: vi.fn(),
 }))
 
 vi.mock('../module/g6Graph', () => ({
@@ -22,6 +25,8 @@ vi.mock('../module/g6Graph', () => ({
     }
 
     switchLayout = graphMock.switchLayout
+    setColorMaps = graphMock.setColorMaps
+    update() {}
     destroy() {}
   },
 }))
@@ -32,6 +37,7 @@ describe('GraphVisualization', () => {
     graphMock.nodes = undefined
     graphMock.edges = undefined
     graphMock.switchLayout.mockClear()
+    graphMock.setColorMaps.mockClear()
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(600)
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(400)
     vi.stubGlobal('ResizeObserver', class {
@@ -130,5 +136,58 @@ describe('GraphVisualization', () => {
       label: '合作关系',
       relation_type: '相关',
     })
+  })
+
+  it('passes node type and edge label color maps and updates them', async () => {
+    const wrapper = mount(GraphVisualization, {
+      props: {
+        nodes: [
+          { id: 'chapter', label: '章节点', type: '章' },
+          { id: 'section', label: '小节节点', type: '小节' },
+        ],
+        edges: [
+          {
+            source: 'chapter',
+            target: 'section',
+            label: '包含',
+            relation_type: '所属',
+          },
+        ],
+        nodeTypeColors: {
+          章: '#409EFF',
+          小节: '#67C23A',
+        },
+        edgeLabelColors: {
+          包含: '#409EFF',
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(graphMock.initOptions?.nodeTypeColors).toEqual({
+      章: '#409EFF',
+      小节: '#67C23A',
+    })
+    expect(graphMock.initOptions?.edgeLabelColors).toEqual({
+      包含: '#409EFF',
+    })
+
+    await wrapper.setProps({
+      nodeTypeColors: {
+        章: '#0057B8',
+        小节: '#67C23A',
+      },
+    })
+
+    expect(graphMock.setColorMaps).toHaveBeenLastCalledWith(
+      {
+        章: '#0057B8',
+        小节: '#67C23A',
+      },
+      {
+        包含: '#409EFF',
+      },
+    )
   })
 })

@@ -61,6 +61,8 @@ const edges = ref([
 | layoutType | `LayoutType` | `'force'` | 默认布局类型，传入后初始化并随参数变化自动切换 |
 | nodeFieldMap | `NodeFieldMap` | 标准字段 | 业务节点字段到 `id`、`label`、`type` 的映射 |
 | edgeFieldMap | `EdgeFieldMap` | 标准字段 | 业务边字段到 `id`、`source`、`target`、`label`、`relation_type` 的映射 |
+| nodeTypeColors | `GraphColorMap` | 内置配色 | 节点 `type` 到显示颜色的映射 |
+| edgeLabelColors | `GraphColorMap` | 内置配色 | 边 `label` 到显示颜色的映射 |
 
 #### 设置默认图类型
 
@@ -144,6 +146,44 @@ const edgeFieldMap: EdgeFieldMap = {
 ```
 
 映射后，组件会保留原始业务字段，同时生成标准的 `GraphNode` 和 `GraphEdge` 字段供 G6 使用。`nodeClick` 事件返回转换后的节点对象，标准字段和原始业务字段都可以访问。
+
+#### 自定义节点和边颜色
+
+业务端可以通过节点 `type` 和边 `label` 定义业务配色：
+
+```vue
+<script setup lang="ts">
+import {
+  GraphVisualization,
+  type GraphColorMap,
+} from '@agilehub/vue-knowledge-graph'
+
+const nodeTypeColors: GraphColorMap = {
+  章: '#409EFF',
+  小节: '#67C23A',
+  知识点: '#E6A23C',
+}
+
+const edgeLabelColors: GraphColorMap = {
+  包含: '#409EFF',
+  组成: '#67C23A',
+}
+</script>
+
+<template>
+  <GraphVisualization
+    :nodes="nodes"
+    :edges="edges"
+    :node-type-colors="nodeTypeColors"
+    :edge-label-colors="edgeLabelColors"
+  />
+</template>
+```
+
+颜色优先级：
+
+- 节点：`node.style.fill` > `nodeTypeColors[type]` > 内置节点类型配色
+- 边：`edge.style.stroke` > `edgeLabelColors[label]` > `relation_type` 内置配色
 
 #### Events
 
@@ -321,7 +361,7 @@ const handleSwitchLayout = (type: LayoutType) => {
 
 ## 节点/边颜色
 
-根据类型自动配色：
+未传入 `nodeTypeColors` 和 `edgeLabelColors` 时，根据节点 `type` 和边 `relation_type` 使用以下默认配色：
 
 ### 节点类型颜色
 

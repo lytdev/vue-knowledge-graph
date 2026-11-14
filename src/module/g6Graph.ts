@@ -23,6 +23,7 @@ export type LayoutType =
   | 'mindmap'
 
 export type GraphLayoutCategory = 'network' | 'hierarchy'
+export type GraphColorMap = Record<string, string>
 
 export interface GraphLayoutOption {
   value: LayoutType
@@ -76,6 +77,8 @@ export interface GraphInitOptions {
   height?: number
   layoutType?: LayoutType
   onNodeClick?: (nodeId: string) => void
+  nodeTypeColors?: GraphColorMap
+  edgeLabelColors?: GraphColorMap
 }
 
 /** 负责 G6 实例的生命周期和通用视口操作。 */
@@ -148,6 +151,8 @@ export class BaseG6Graph {
 /** 知识图谱实现：实体/关系配色、布局切换和图谱交互。 */
 export class KnowledgeGraph extends BaseG6Graph {
   private currentLayoutType: LayoutType = 'force'
+  private nodeTypeColors: GraphColorMap = {}
+  private edgeLabelColors: GraphColorMap = {}
   private nodeClickHandler: ((nodeId: string) => void) | null = null
   private canvasElement: HTMLCanvasElement | null = null
   private canvasPointerDownHandler: ((event: IPointerEvent) => void) | null = null
@@ -237,7 +242,8 @@ export class KnowledgeGraph extends BaseG6Graph {
       事件: '#722ed1',
       entity: '#13c2c2',
     }
-    return colors[entityType || 'entity'] || '#13c2c2'
+    const type = entityType || 'entity'
+    return this.nodeTypeColors[type] || colors[type] || '#13c2c2'
   }
 
   private getColorByRelation(relationType?: string): string {
@@ -250,9 +256,18 @@ export class KnowledgeGraph extends BaseG6Graph {
     return colors[relationType || '相关'] || '#9b59b6'
   }
 
+  public setColorMaps(
+    nodeTypeColors: GraphColorMap = {},
+    edgeLabelColors: GraphColorMap = {},
+  ) {
+    this.nodeTypeColors = { ...nodeTypeColors }
+    this.edgeLabelColors = { ...edgeLabelColors }
+  }
+
   public init(options: GraphInitOptions, nodes: GraphNode[], edges: GraphEdge[]) {
     const width = options.width || options.container.offsetWidth
     const height = options.height || options.container.offsetHeight
+    this.setColorMaps(options.nodeTypeColors, options.edgeLabelColors)
     const data = this.processData(nodes, edges)
 
     this.currentLayoutType = options.layoutType ?? 'force'
@@ -381,7 +396,8 @@ export class KnowledgeGraph extends BaseG6Graph {
         },
       })),
       edges: edges.map((edge, index) => {
-        const color = edge.style?.stroke || this.getColorByRelation(edge.relation_type)
+        const labelColor = edge.label ? this.edgeLabelColors[edge.label] : undefined
+        const color = edge.style?.stroke || labelColor || this.getColorByRelation(edge.relation_type)
         return {
           id: edge.id || `edge-${edge.source}-${edge.target}-${index}`,
           source: edge.source,

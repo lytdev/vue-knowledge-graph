@@ -8,7 +8,11 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { GraphNode } from '../types'
-import { KnowledgeGraph, type LayoutType } from '../module/g6Graph'
+import {
+  KnowledgeGraph,
+  type GraphColorMap,
+  type LayoutType,
+} from '../module/g6Graph'
 import {
   normalizeGraphEdge,
   normalizeGraphNode,
@@ -27,6 +31,10 @@ interface Props {
   nodeFieldMap?: NodeFieldMap
   /** 业务边字段名到组件标准字段名的映射。 */
   edgeFieldMap?: EdgeFieldMap
+  /** 节点类型到颜色的映射。 */
+  nodeTypeColors?: GraphColorMap
+  /** 边标签到颜色的映射。 */
+  edgeLabelColors?: GraphColorMap
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -35,6 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
   layoutType: 'force',
   nodeFieldMap: undefined,
   edgeFieldMap: undefined,
+  nodeTypeColors: undefined,
+  edgeLabelColors: undefined,
 })
 
 const emit = defineEmits<{
@@ -85,6 +95,8 @@ const initGraph = () => {
         width: props.width || width,
         height: props.height || height,
         layoutType: props.layoutType,
+        nodeTypeColors: props.nodeTypeColors,
+        edgeLabelColors: props.edgeLabelColors,
         onNodeClick: (nodeId) => {
           const node = normalizedNodes.value.find((item) => item.id === nodeId)
           if (node) emit('nodeClick', node)
@@ -102,6 +114,7 @@ const updateGraph = () => {
     return
   }
 
+  graph.setColorMaps(props.nodeTypeColors, props.edgeLabelColors)
   graph.update(normalizedNodes.value, normalizedEdges.value)
 }
 
@@ -132,7 +145,14 @@ defineExpose({
 })
 
 watch(
-  () => [props.nodes, props.edges, props.nodeFieldMap, props.edgeFieldMap],
+  () => [
+    props.nodes,
+    props.edges,
+    props.nodeFieldMap,
+    props.edgeFieldMap,
+    props.nodeTypeColors,
+    props.edgeLabelColors,
+  ],
   () => {
     if (graph) {
       updateGraph()

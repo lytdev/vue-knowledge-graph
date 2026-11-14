@@ -129,6 +129,54 @@ describe('KnowledgeGraph events', () => {
     vi.useRealTimers()
   })
 
+  it('uses custom node type and edge label colors', () => {
+    const container = document.createElement('div')
+    const graph = new KnowledgeGraph()
+    graphMock.configs.length = 0
+
+    graph.init(
+      {
+        container,
+        nodeTypeColors: {
+          章: '#409EFF',
+          小节: '#67C23A',
+          知识点: '#E6A23C',
+        },
+        edgeLabelColors: {
+          包含: '#409EFF',
+          组成: '#67C23A',
+        },
+      },
+      [
+        { id: 'chapter', label: '章节点', type: '章' },
+        { id: 'section', label: '小节节点', type: '小节' },
+        { id: 'knowledge', label: '知识点节点', type: '知识点' },
+      ],
+      [
+        { source: 'chapter', target: 'section', label: '包含', relation_type: '所属' },
+        { source: 'section', target: 'knowledge', label: '组成', relation_type: '相关' },
+      ],
+    )
+
+    const graphConfig = graphMock.configs.at(-1) as {
+      data?: {
+        nodes?: Array<{ style?: { fill?: string } }>
+        edges?: Array<{ style?: { stroke?: string } }>
+      }
+    }
+
+    expect(graphConfig.data?.nodes?.map((node) => node.style?.fill)).toEqual([
+      '#409EFF',
+      '#67C23A',
+      '#E6A23C',
+    ])
+    expect(graphConfig.data?.edges?.map((edge) => edge.style?.stroke)).toEqual([
+      '#409EFF',
+      '#67C23A',
+    ])
+    graph.destroy()
+  })
+
   it('initializes and switches between the supported flat-graph layouts', () => {
     const container = document.createElement('div')
     const graph = new KnowledgeGraph()
